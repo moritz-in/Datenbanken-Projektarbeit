@@ -73,3 +73,8 @@ Diese Konzepte sind kein Selbstzweck, sondern dienen der reflektierten Analyse m
 *Relationale Datenbanken sichern Wahrheit – semantische Verfahren erweitern den Blick.*
 
 *(Hinweis: GraphDB- und LLM-gestützte RAG-Verfahren sind optional. Der Schwerpunkt des Projekts liegt auf relationalen Datenbanken.)*
+
+
+app: http://localhost:8081
+Adminor: http://localhost:8990
+Adrant: http://localhost:6343
