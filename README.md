@@ -78,3 +78,4 @@ Diese Konzepte sind kein Selbstzweck, sondern dienen der reflektierten Analyse m
 app: http://localhost:8081
 Adminor: http://localhost:8990
 Adrant: http://localhost:6343
+Neo4j: http://localhost:7848
