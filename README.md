@@ -79,3 +79,8 @@ app: http://localhost:8081
 Adminor: http://localhost:8990
 Adrant: http://localhost:6343
 Neo4j: http://localhost:7848
+
+
+
+=>> Wichtig: Alles reinschreiben was Kessler machen muss um die Schema und import laufenzulassen
+=>> Name und MatNR
