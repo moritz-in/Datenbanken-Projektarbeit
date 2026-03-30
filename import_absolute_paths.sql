@@ -1,35 +1,15 @@
 -- ============================================================================
--- Produktdatenbank Import-Skript (Transaktional & Wiederholbar)
+-- Produktdatenbank Import-Skript (mit absoluten Pfaden)
 -- ============================================================================
 -- Beschreibung: Transaktionaler Import aller CSV-Dateien in die Datenbank
---               mit vollständiger Fehlerbehandlung und Rollback-Mechanismen
+--               mit ABSOLUTEN Pfaden für LOAD DATA INFILE
 -- Version: 2.1
 -- Datum: 2026-03-30
 -- Datenbank: MySQL 8.4
 -- ============================================================================
--- ANFORDERUNGEN:
---   ✓ Wiederholbar aufsetzbar (idempotent)
---   ✓ Saubere Primär- und Fremdschlüssel
---   ✓ M:N-Zuordnungstabelle (product_tag)
---   ✓ Verwendung von Transaktionen (START TRANSACTION / COMMIT / ROLLBACK)
---   ✓ Bei Fehlern keine inkonsistenten Daten
--- ============================================================================
--- WICHTIG: Dateipfade für LOAD DATA INFILE
--- ============================================================================
--- MySQL benötigt absolute Pfade oder Pfade relativ zum data directory.
--- 
--- Option 1: Absolute Pfade verwenden (empfohlen)
---   - Ersetze 'data/brands.csv' durch den vollständigen Pfad
---   - Beispiel: '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/brands.csv'
---
--- Option 2: Secure-file-priv prüfen und CSV-Dateien dorthin kopieren
---   - Führe aus: SHOW VARIABLES LIKE 'secure_file_priv';
---   - Kopiere alle CSV-Dateien in das angezeigte Verzeichnis
---   - Passe die Pfade entsprechend an
---
--- Option 3: secure-file-priv deaktivieren (nur für Entwicklung!)
---   - Füge in my.cnf/my.ini hinzu: secure-file-priv=""
---   - Starte MySQL-Server neu
+-- WICHTIG: Dieses Skript verwendet absolute Pfade
+-- Passe die Pfade unten an dein System an!
+-- Aktueller Pfad: /Users/moritzinderwies/Datenbanken-Projektarbeit/data/
 -- ============================================================================
 
 -- ============================================================================
@@ -54,13 +34,6 @@ SELECT '============================================' AS '';
 -- ============================================================================
 -- TRANSACTION 1: Import der Stammdaten (Master Data)
 -- ============================================================================
--- Importiert alle Stammdatentabellen:
--- - brand (5 Datensätze)
--- - category (4 Datensätze)
--- - tag (5 Datensätze)
--- 
--- ATOMARITÄT: Bei einem Fehler werden ALLE Stammdaten-Importe zurückgerollt
--- ============================================================================
 
 SELECT '--------------------------------------------' AS '';
 SELECT 'TRANSACTION 1: Import Stammdaten' AS Status;
@@ -73,7 +46,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere brands.csv → brand...' AS Status;
     
-    LOAD DATA INFILE 'data/brands.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/brands.csv'
     INTO TABLE brand
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
@@ -95,7 +68,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere categories.csv → category...' AS Status;
     
-    LOAD DATA INFILE 'data/categories.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/categories.csv'
     INTO TABLE category
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
@@ -117,7 +90,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere tags.csv → tag...' AS Status;
     
-    LOAD DATA INFILE 'data/tags.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/tags.csv'
     INTO TABLE tag
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
@@ -144,11 +117,6 @@ SELECT CONCAT('  └─ ', @tag_count, ' Tags') AS '';
 -- ============================================================================
 -- TRANSACTION 2: Import der Produktdaten (products_extended.csv)
 -- ============================================================================
--- Importiert Produkte 1-500 aus products_extended.csv mit technischen Daten
--- 
--- ATOMARITÄT: Bei einem Fehler wird der Import zurückgerollt
--- INTEGRITÄT: Prüft Foreign Keys zu brand und category
--- ============================================================================
 
 SELECT '--------------------------------------------' AS '';
 SELECT 'TRANSACTION 2: Import Produkte 1-500' AS Status;
@@ -161,7 +129,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere products_extended.csv → product...' AS Status;
     
-    LOAD DATA INFILE 'data/products_extended.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/products_extended.csv'
     INTO TABLE product
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
@@ -216,11 +184,6 @@ SELECT CONCAT('  └─ ', @product_count_1, ' Produkte (IDs ', @product_min_id_
 -- ============================================================================
 -- TRANSACTION 3: Import weiterer Produktdaten (products_500_new.csv)
 -- ============================================================================
--- Importiert Produkte 501-1000 aus products_500_new.csv
--- 
--- ATOMARITÄT: Bei einem Fehler wird der Import zurückgerollt
--- INTEGRITÄT: Prüft Foreign Keys zu brand und category
--- ============================================================================
 
 SELECT '--------------------------------------------' AS '';
 SELECT 'TRANSACTION 3: Import Produkte 501-1000' AS Status;
@@ -233,7 +196,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere products_500_new.csv → product...' AS Status;
     
-    LOAD DATA INFILE 'data/products_500_new.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/products_500_new.csv'
     INTO TABLE product
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
@@ -296,12 +259,6 @@ SELECT CONCAT('  └─ ', @product_total, ' Produkte gesamt') AS '';
 -- ============================================================================
 -- TRANSACTION 4: Import der Produkt-Tag-Verknüpfungen (product_tags.csv)
 -- ============================================================================
--- Importiert M:N-Verknüpfungen zwischen Produkten und Tags
--- 
--- ATOMARITÄT: Bei einem Fehler wird der Import zurückgerollt
--- INTEGRITÄT: Prüft Foreign Keys zu product und tag
--- HINWEIS: Die CSV enthält nur Verknüpfungen für Produkte 1-500
--- ============================================================================
 
 SELECT '--------------------------------------------' AS '';
 SELECT 'TRANSACTION 4: Import M:N Verknüpfungen' AS Status;
@@ -314,7 +271,7 @@ START TRANSACTION;
     -- ------------------------------------------------------------------------
     SELECT 'Importiere product_tags.csv → product_tag...' AS Status;
     
-    LOAD DATA INFILE 'data/product_tags.csv'
+    LOAD DATA INFILE '/Users/moritzinderwies/Datenbanken-Projektarbeit/data/product_tags.csv'
     INTO TABLE product_tag
     FIELDS TERMINATED BY ',' 
     ENCLOSED BY '"'
