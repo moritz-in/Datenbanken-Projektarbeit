@@ -75,12 +75,63 @@ Diese Konzepte sind kein Selbstzweck, sondern dienen der reflektierten Analyse m
 *(Hinweis: GraphDB- und LLM-gestützte RAG-Verfahren sind optional. Der Schwerpunkt des Projekts liegt auf relationalen Datenbanken.)*
 
 
-app: http://localhost:8081
-Adminor: http://localhost:8990
-Adrant: http://localhost:6343
-Neo4j: http://localhost:7848
+---
 
+## 📦 Datenbank Setup
 
+### Voraussetzungen
+- MySQL 8.0 oder höher
+- Zugriff auf MySQL CLI
 
-=>> Wichtig: Alles reinschreiben was Kessler machen muss um die Schema und import laufenzulassen
-=>> Name und MatNR
+### Installation der Datenbank
+
+**Schritt 1: Schema erstellen**
+```bash
+mysql -u root -p < schema.sql
+```
+Dies erstellt die Datenbank mit allen Tabellen, Foreign Keys, Indizes und Constraints.
+
+**Schritt 2: Daten importieren**
+```bash
+mysql --local-infile=1 -u root -p datenbankname < import.sql
+```
+**WICHTIG:** Das `--local-infile=1` Flag ist erforderlich, da die Daten aus lokalen CSV-Dateien importiert werden.
+
+**Schritt 3: Datenbank überprüfen**
+```bash
+mysql -u root -p datenbankname < verify_database.sql
+```
+Dieses Skript prüft die referentielle Integrität und zeigt Statistiken über die importierten Daten.
+
+### Erwartete Datenmengen
+- 5 Brands (Marken)
+- 4 Categories (Kategorien)
+- 5 Tags
+- 1000 Products (Produkte)
+- 995 Product-Tag Verknüpfungen
+
+Weitere Details zur Datenbankstruktur finden Sie in:
+- `ER-Diagramm.md` - Visualisierung der Datenbankstruktur
+- `DATABASE_IMPORT.md` - Detaillierte Importanleitung
+- `schema.sql` - Vollständiges DDL-Schema
+
+---
+
+## 🌐 Services
+
+- App: http://localhost:8081
+- Adminer: http://localhost:8990
+- Qdrant: http://localhost:6343
+- Neo4j: http://localhost:7848
+
+---
+
+**Student:** [Name]  
+**Matrikelnummer:** [MatNr]  
+**Datum:** 30.03.2026
+
+Passwörter Adminer:
+mysql
+root
+admin123
+productdb
