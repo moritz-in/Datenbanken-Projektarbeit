@@ -34,13 +34,16 @@ class NoOpNeo4jRepository(Neo4jRepository):
     """No-op repository used when Neo4j is not configured."""
 
     def get_product_relationships(self, mysql_ids: list[int]) -> dict[int, dict]:
-        raise NotImplementedError("TODO: implement no-op behavior or remove this class.")
+        log.debug("NoOpNeo4jRepository.get_product_relationships called (Neo4j not configured)")
+        return {}
 
     def execute_cypher(self, query: str, parameters: Optional[dict] = None) -> list:
-        raise NotImplementedError("TODO: implement no-op behavior or remove this class.")
+        log.debug("NoOpNeo4jRepository.execute_cypher called (Neo4j not configured)")
+        return []
 
     def close(self) -> None:
-        raise NotImplementedError("TODO: implement no-op behavior or remove this class.")
+        log.debug("NoOpNeo4jRepository.close called (Neo4j not configured)")
+        pass
 
 
 class Neo4jRepositoryImpl(Neo4jRepository):

@@ -58,11 +58,12 @@ class MySQLRepositoryImpl(MySQLRepository):
             session_factory: Optional SQLAlchemy session factory.
                            If None, uses db.mysql_session_factory
         """
-        raise NotImplementedError("TODO: implement repository initialization.")
+        self._session_factory = session_factory or db.mysql_session_factory
+        log.debug("MySQLRepositoryImpl initialized")
 
     def _get_session(self):
         """Get MySQL session from factory"""
-        raise NotImplementedError("TODO: implement session retrieval.")
+        return self._session_factory
 
     def get_products_with_joins(self, page: int, page_size: int) -> dict:
         """

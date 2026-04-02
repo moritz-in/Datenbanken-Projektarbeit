@@ -78,7 +78,9 @@ class QdrantRepositoryImpl(QdrantRepository):
             qdrant_url: Qdrant server URL
             default_collection: Default collection name for products
         """
-        raise NotImplementedError("TODO: implement Qdrant repository initialization.")
+        self._client = QdrantClient(url=qdrant_url)
+        self._default_collection = default_collection
+        log.debug("QdrantRepositoryImpl initialized, url=%s", qdrant_url)
 
     def ensure_collection(
         self,

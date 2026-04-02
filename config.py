@@ -30,7 +30,6 @@ class Config:
     QDRANT_URL = os.getenv("QDRANT_URL")
 
     # Optional
-    PG_URL = os.getenv("PG_URL")
     QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "products")
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     EMBEDDING_DIM = _int_env("EMBEDDING_DIM", 384)
