@@ -53,7 +53,12 @@
 - ⚠️ **Pitfall 14 (RepositoryFactory race):** Same double-checked locking pattern required in `RepositoryFactory.get_*()` methods.
 - ⚠️ **Pitfall 8 (NoOp crashes):** `NoOpNeo4jRepository` currently raises `NotImplementedError` — fix ALL three methods before implementing any factory.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 00-01-PLAN.md — Rename schema.sql tables to plural + add etl_run_log, product_change_log, sku DDL
+- [ ] 00-02-PLAN.md — Fix NoOpNeo4jRepository safe returns + remove PostgreSQL dead code
+- [ ] 00-03-PLAN.md — Implement RepositoryFactory + ServiceFactory thread-safe singletons
 
 ---
 
