@@ -160,7 +160,13 @@ def create_app():
     mysql_url = app.config.get("MYSQL_URL")
     if mysql_url:
         try:
-            db.mysql_session_factory = db.make_session(mysql_url)
+            from sqlalchemy import create_engine
+            engine = create_engine(mysql_url, pool_pre_ping=True, future=True)
+            db.mysql_engine = engine
+            from sqlalchemy.orm import sessionmaker
+            db.mysql_session_factory = sessionmaker(
+                bind=engine, autoflush=False, autocommit=False, future=True
+            )
             log.info("✓ MySQL database initialized")
         except Exception:
             log.exception(

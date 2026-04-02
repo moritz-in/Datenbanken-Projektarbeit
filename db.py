@@ -7,3 +7,4 @@ def make_session(database_url: str):
 
 # wird in app.py initialisiert
 mysql_session_factory = None
+mysql_engine = None
