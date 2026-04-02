@@ -1,0 +1,131 @@
+# STATE: Datenbanken-Projektarbeit Teil 2
+
+**Last updated:** 2026-04-02
+**Session:** Initial roadmap creation
+
+---
+
+## Project Reference
+
+**Core value:** Die Anwendung muss demonstrierbar laufen: Produkte anlegen/ändern/löschen mit Transaktionssicherheit, semantisch suchen (Qdrant) und per RAG mit Graph-Kontext antworten (Neo4j + OpenAI) — alles vergleichbar nebeneinander.
+
+**Stack:** Python 3.12 + Flask 3.0.3 + SQLAlchemy 2.0.32 + MySQL 8.4 + Qdrant v1.16.2 + Neo4j 5 + OpenAI gpt-4.1-mini + sentence-transformers/all-MiniLM-L6-v2
+
+**Deliverable:** `docker compose up` → fully working demo + `COMPARISON.md`
+
+---
+
+## Current Position
+
+**Active Phase:** Phase 0 — Foundation & Blockers
+**Active Plan:** None (planning not yet started for Phase 0)
+**Status:** Not started
+
+```
+Progress: [ Phase 0 | Phase 1 | Phase 2 | Phase 3 | Phase 4 | Phase 5 ]
+           [  ACTIVE |         |         |         |         |        ]
+           [   0%    |   0%    |   0%    |   0%    |   0%    |   0%  ]
+```
+
+---
+
+## Phase Status
+
+| Phase | Name | Requirements | Status | Completed |
+|-------|------|-------------|--------|-----------|
+| 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Active — Not started** | - |
+| 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | Pending | - |
+| 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | Pending | - |
+| 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
+| 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
+| 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
+
+**Total requirements:** 50/50 mapped
+
+---
+
+## Performance Metrics
+
+| Metric | Value |
+|--------|-------|
+| Phases total | 6 |
+| Phases complete | 0 |
+| Phases in progress | 1 (Phase 0 — active) |
+| Requirements mapped | 50/50 |
+| Requirements complete | 0/50 |
+| Plans created | 0 |
+| Plans complete | 0 |
+
+---
+
+## Accumulated Context
+
+### Key Decisions Made
+
+| Decision | Rationale |
+|----------|-----------|
+| 6 phases (0–5), strictly sequential | Dependency chain is hard: Phase 0 unblocks everything; Phase 3 unblocks Phase 4; no shortcuts possible |
+| Phase 0 contains ALL schema + factory fixes | Schema mismatch and factory race conditions cause cryptic failures everywhere — fix first, 100% |
+| Phase 2 and Phase 3 have soft overlap | Both depend on Phase 1 being done; Phase 2 (DDL) and Phase 3 (Qdrant ETL) are relatively independent of each other |
+| `with session.begin():` exclusively — no `text("COMMIT")` | SQLAlchemy 2.0 strict mode; raw COMMIT desynchronizes internal state machine |
+| `MERGE` not `CREATE` for Neo4j sync | Idempotency — repeated index builds must not accumulate duplicate nodes |
+| Embedding model singleton with `threading.Lock` | Flask dev server is threaded; concurrent first requests race to load 90 MB model |
+| `ensure_collection()` before every upsert | Qdrant has no auto-create; 404 on fresh container; idempotent check is cheap |
+| `.tolist()` on all numpy vectors | `PointStruct.vector` field requires `list[float]`; ndarray causes JSON serialization failure in some client versions |
+| `cursor.nextset()` after every `CALL import_product()` | MySQL returns implicit result set; missing cleanup corrupts connection pool state |
+
+### Known Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| Schema rename breaks FK references | Must update ALL `REFERENCES`, `DROP TABLE`, and `ON DELETE/ON UPDATE` clauses — not just `CREATE TABLE` |
+| `etl_run_log` / `product_change_log` missing from `schema.sql` | Add DDL in Phase 0 before `docker compose up` — these tables are load-bearing for Phase 3 and Phase 2 respectively |
+| `NoOpNeo4jRepository` crashes with `NotImplementedError` | Fix all 3 methods in Phase 0 — any factory code path returning NoOp will 501 instead of degrading gracefully |
+| `sync_products()` not in `Neo4jRepository` ABC | Add as `@abstractmethod` during Phase 4; `NoOpNeo4jRepository` returns `0` |
+| `etl_run_log` column names differ between IDE scratch file and FEATURES.md | Reconcile in Phase 0 — pick one schema, ensure `MySQLRepositoryImpl.log_etl_run()` signature matches |
+| OpenAI API key absent | `_get_llm_client()` returns `None`; `_generate_llm_answer()` returns localized fallback string — RAG route still functional |
+
+### Pitfall Index (for quick reference during implementation)
+
+| Pitfall | Phase | Key Rule |
+|---------|-------|---------|
+| Schema table name mismatch | Phase 0 | Rename ALL references in `schema.sql` to plural |
+| Missing `etl_run_log` | Phase 0 | Add DDL before `docker compose up` |
+| Session not closed (pool exhaustion) | Phase 1 | `with self._session_factory() as session:` always |
+| Raw `text("COMMIT")` | Phase 1 | Use `with session.begin():` exclusively |
+| Nested `session.commit()` | Phase 1 | Never call `session.commit()` inside `with session.begin():` |
+| Qdrant collection-before-upsert | Phase 3 | `ensure_collection()` before every `upsert_points()` |
+| Qdrant numpy dimension | Phase 3 | `.tolist()` on all numpy arrays + `wait=True` |
+| Neo4j driver singleton | Phase 4 | Only via `RepositoryFactory` — never per-request |
+| Neo4j session not closed | Phase 4 | `with driver.session() as session:` always |
+| Neo4j CREATE vs MERGE | Phase 4 | `MERGE` only — `CREATE` accumulates duplicates |
+| Embedding model loaded 3× | Phase 0 | Double-checked locking singleton in `ServiceFactory._shared_resources` |
+| Embedding model threading race | Phase 0 | `threading.Lock` around check-and-set |
+| Stored procedure nextset | Phase 2 | `cursor.nextset()` until `False` after every `CALL` |
+| RepositoryFactory race condition | Phase 0 | `threading.Lock` + double-checked locking |
+
+---
+
+## Session Continuity
+
+### What Was Done This Session
+
+- Read all planning documents: `PROJECT.md`, `REQUIREMENTS.md`, `research/SUMMARY.md`, `research/FEATURES.md`, `research/ARCHITECTURE.md`, `research/PITFALLS.md`, `codebase/CONCERNS.md`, `codebase/ARCHITECTURE.md`
+- Created `ROADMAP.md` with 6 phases (Phase 0–5), full requirement mapping, success criteria, and pitfall warnings
+- Created `STATE.md` (this file) with current position, phase status, and accumulated context
+
+### What to Do Next
+
+1. Run `/gsd-plan-phase 0` to create the execution plan for Phase 0 (Foundation & Blockers)
+2. Phase 0 plan will cover: schema rename, missing table DDL, RepositoryFactory implementation, ServiceFactory + embedding singleton, NoOpNeo4jRepository fix, PostgreSQL dead-code removal
+3. Verify Phase 0 completion via `validate_mysql()` → all tables PASSED before moving to Phase 1
+
+### Files Written This Session
+
+- `.planning/ROADMAP.md` — full 6-phase roadmap
+- `.planning/STATE.md` — this file
+
+---
+
+*State initialized: 2026-04-02*
+*Next action: Plan Phase 0*
