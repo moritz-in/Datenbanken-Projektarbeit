@@ -7,14 +7,14 @@
 
 ### Foundation — Blocker (zuerst)
 
-- [ ] **FOUND-01**: Alle Tabellennamen in `schema.sql` auf Plural umbenannt (`product` → `products`, `brand` → `brands`, `category` → `categories`, `tag` → `tags`)
-- [ ] **FOUND-02**: `etl_run_log`-Tabelle in `schema.sql` definiert (Spalten: id, run_at, products_indexed, duration_seconds, status)
-- [ ] **FOUND-03**: `product_change_log`-Tabelle in `schema.sql` definiert (Spalten: id, product_id, changed_at, old_name, new_name, old_price, new_price, old_description, new_description)
-- [ ] **FOUND-04**: `sku`-Spalte (`VARCHAR(100) UNIQUE NULL`) zur `products`-Tabelle hinzugefügt
-- [ ] **FOUND-05**: `RepositoryFactory` vollständig implementiert — alle `get_*()` Methoden geben Singleton-Instanzen zurück
-- [ ] **FOUND-06**: `ServiceFactory` vollständig implementiert — alle `get_*()` Methoden + `_get_embedding_model()` als echter threading-Lock-gesicherter Singleton
-- [ ] **FOUND-07**: `NoOpNeo4jRepository` repariert — alle 3 Methoden geben sichere Leerwerte zurück statt `NotImplementedError`
-- [ ] **FOUND-08**: PostgreSQL-Dead-Code entfernt (`pg_session_factory`, `psycopg2-binary` aus `requirements.txt`)
+- [x] **FOUND-01**: Alle Tabellennamen in `schema.sql` auf Plural umbenannt (`product` → `products`, `brand` → `brands`, `category` → `categories`, `tag` → `tags`)
+- [x] **FOUND-02**: `etl_run_log`-Tabelle in `schema.sql` definiert (Spalten: id, strategy, started_at, finished_at, products_processed, products_written, status, error_msg)
+- [x] **FOUND-03**: `product_change_log`-Tabelle in `schema.sql` definiert (Spalten: id, product_id, changed_at, field_name, old_value, new_value, changed_by — EAV-Stil normalisiert)
+- [x] **FOUND-04**: `sku`-Spalte (`VARCHAR(100) UNIQUE NULL`) zur `products`-Tabelle hinzugefügt
+- [x] **FOUND-05**: `RepositoryFactory` vollständig implementiert — alle `get_*()` Methoden geben Singleton-Instanzen zurück
+- [x] **FOUND-06**: `ServiceFactory` vollständig implementiert — alle `get_*()` Methoden + `_get_embedding_model()` als echter threading-Lock-gesicherter Singleton
+- [x] **FOUND-07**: `NoOpNeo4jRepository` repariert — alle 3 Methoden geben sichere Leerwerte zurück statt `NotImplementedError`
+- [x] **FOUND-08**: PostgreSQL-Dead-Code entfernt (`pg_session_factory`, `psycopg2-binary` aus `requirements.txt`)
 
 ### A2 — Transaktionen
 
@@ -110,14 +110,14 @@ Wird nach Roadmap-Erstellung befüllt.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 0 | Pending |
-| FOUND-02 | Phase 0 | Pending |
-| FOUND-03 | Phase 0 | Pending |
-| FOUND-04 | Phase 0 | Pending |
-| FOUND-05 | Phase 0 | Pending |
-| FOUND-06 | Phase 0 | Pending |
-| FOUND-07 | Phase 0 | Pending |
-| FOUND-08 | Phase 0 | Pending |
+| FOUND-01 | Phase 0 | Complete |
+| FOUND-02 | Phase 0 | Complete |
+| FOUND-03 | Phase 0 | Complete |
+| FOUND-04 | Phase 0 | Complete |
+| FOUND-05 | Phase 0 | Complete |
+| FOUND-06 | Phase 0 | Complete |
+| FOUND-07 | Phase 0 | Complete |
+| FOUND-08 | Phase 0 | Complete |
 | TXN-01 | Phase 1 | Pending |
 | TXN-02 | Phase 1 | Pending |
 | TXN-03 | Phase 1 | Pending |
