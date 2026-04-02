@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 bp = Blueprint("validate", __name__)
 
 
-@bp.post("/validate")
+@bp.route("/validate", methods=["GET", "POST"])
 def validate():
     """Run validate_mysql() against the live MySQL engine and render results."""
     if db.mysql_engine is None:
