@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 0 — Foundation & Blockers** — Schema fixes, factory singletons, NoOp repair, PostgreSQL dead-code removal
+- [x] **Phase 0 — Foundation & Blockers** — Schema fixes, factory singletons, NoOp repair, PostgreSQL dead-code removal (completed 2026-04-02)
 - [ ] **Phase 1 — MySQL CRUD & Transaktionen (A2)** — Repository write path with explicit transactions, rollback demos, CRUD routes
 - [ ] **Phase 2 — MySQL DDL Features (A3, A4, A5)** — Trigger, Stored Procedure, B-Tree indexes, EXPLAIN analysis
 - [ ] **Phase 3 — Qdrant Vektor-Suche (A6)** — Vector ETL, semantic search route, index build route, ETL logging
@@ -53,7 +53,7 @@
 - ⚠️ **Pitfall 14 (RepositoryFactory race):** Same double-checked locking pattern required in `RepositoryFactory.get_*()` methods.
 - ⚠️ **Pitfall 8 (NoOp crashes):** `NoOpNeo4jRepository` currently raises `NotImplementedError` — fix ALL three methods before implementing any factory.
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 00-01-PLAN.md — Rename schema.sql tables to plural + add etl_run_log, product_change_log, sku DDL
@@ -247,7 +247,7 @@ Plans:
 
 | Phase | Requirements | Plans Complete | Status | Completed |
 |-------|-------------|----------------|--------|-----------|
-| 0. Foundation & Blockers | 8 (FOUND-01–08) | 0/TBD | Not started | - |
+| 0. Foundation & Blockers | 4/4 | Complete   | 2026-04-02 | - |
 | 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 0/TBD | Not started | - |
 | 2. MySQL DDL Features | 16 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02) | 0/TBD | Not started | - |
 | 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
