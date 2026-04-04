@@ -56,10 +56,10 @@
 **Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 00-01-PLAN.md — Rename schema.sql tables to plural + add etl_run_log, product_change_log, sku DDL
-- [ ] 00-02-PLAN.md — Fix NoOpNeo4jRepository safe returns + remove PostgreSQL dead code
-- [ ] 00-03-PLAN.md — Implement RepositoryFactory + ServiceFactory thread-safe singletons
-- [ ] 00-04-PLAN.md — Gap closure: implement /validate route + update stale REQUIREMENTS.md specs
+- [x] 00-01-PLAN.md — Rename schema.sql tables to plural + add etl_run_log, product_change_log, sku DDL
+- [x] 00-02-PLAN.md — Fix NoOpNeo4jRepository safe returns + remove PostgreSQL dead code
+- [x] 00-03-PLAN.md — Implement RepositoryFactory + ServiceFactory thread-safe singletons
+- [x] 00-04-PLAN.md — Gap closure: implement /validate route + update stale REQUIREMENTS.md specs
 
 ---
 
