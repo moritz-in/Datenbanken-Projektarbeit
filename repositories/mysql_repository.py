@@ -127,7 +127,7 @@ class MySQLRepositoryImpl(MySQLRepository):
             result = session.execute(
                 text(
                     """
-                    SELECT p.id AS product_id, p.name, p.price, p.currency,
+                    SELECT p.id AS product_id, p.name, p.price, 'EUR' AS currency,
                            b.name AS brand, c.name AS category
                     FROM products p
                     LEFT JOIN brands b ON p.brand_id = b.id

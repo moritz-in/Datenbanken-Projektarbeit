@@ -1,0 +1,8 @@
+services:
+  app:
+    volumes:
+      - skeleton_pdf_uploads:/data/pdfs
+      - ./logs:/app/logs
+      - ./repositories:/app/repositories:ro
+      - ./services:/app/services:ro
+      - ./routes:/app/routes:ro
