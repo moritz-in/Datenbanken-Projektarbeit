@@ -72,7 +72,7 @@
 
 ### Supporting Routes
 
-- [ ] **ROUTE-01**: `dashboard.py` implementiert — Produktanzahl, letzter ETL-Lauf, System-Status aller 3 DBs
+- [x] **ROUTE-01**: `dashboard.py` implementiert — Produktanzahl, letzter ETL-Lauf, System-Status aller 3 DBs
 - [ ] **ROUTE-02**: `audit.py` implementiert — ETL-Lauf-Log aus `etl_run_log` angezeigt
 - [ ] **ROUTE-03**: `validate.py` implementiert — Schema-Validierung (erwartet vs. tatsächlich) mit Ergebnis-Anzeige
 - [ ] **ROUTE-04**: `pdf.py` implementiert — PDF-Upload → Text-Extraktion → Qdrant-Indexierung
@@ -154,7 +154,7 @@ Wird nach Roadmap-Erstellung befüllt.
 | GRAPH-05 | Phase 4 | Pending |
 | GRAPH-06 | Phase 4 | Pending |
 | GRAPH-07 | Phase 4 | Pending |
-| ROUTE-01 | Phase 1 | Pending |
+| ROUTE-01 | Phase 1 | Complete |
 | ROUTE-02 | Phase 2 | Pending |
 | ROUTE-03 | Phase 2 | Pending |
 | ROUTE-04 | Phase 3 | Pending |

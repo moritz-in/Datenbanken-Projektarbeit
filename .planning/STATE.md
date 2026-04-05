@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: in-progress
-last_updated: "2026-04-05T18:55:17.029Z"
+status: executing
+last_updated: "2026-04-05T19:09:15.428Z"
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 71
 ---
 
@@ -73,6 +73,7 @@ Progress: [███████░░░] 71%
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
 | Phase 01-mysql-crud-transaktionen-a2 P02 | 3min | 2 tasks | 3 files |
+| Phase 01-mysql-crud-transaktionen-a2 P01 | 17m | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Progress: [███████░░░] 71%
 | `cursor.nextset()` after every `CALL import_product()` | MySQL returns implicit result set; missing cleanup corrupts connection pool state |
 | SKU immutable after creation | update_product() has no sku param; UPDATE SET excludes sku column — enforced at repo layer |
 | Unknown tag names silently ignored in _resolve_tag_ids() | Phase 1 scope: no auto-create; tags must pre-exist; simpler UX |
+| Use 'EUR' AS currency literal in SELECT | products table has no currency column; template needs it for display; literal matches create_product hardcoded 'EUR' |
+| docker-compose.override.yml bind-mounts source dirs | Avoids 5+ minute Docker image rebuild cycle; override file auto-applied by docker compose up |
 
 ### Known Risks
 
@@ -127,6 +130,14 @@ Progress: [███████░░░] 71%
 ## Session Continuity
 
 ### What Was Done This Session
+
+- Executed Phase 1 Plan 01: MySQLRepositoryImpl read methods + ProductService read methods + dashboard/products routes
+- Added abstract methods to MySQLRepository ABC (get_brands, get_categories, get_tags, create_product, update_product, delete_product, get_product_by_id)
+- Implemented all read-path methods in MySQLRepositoryImpl (get_products_with_joins, get_dashboard_stats, get_last_runs, get_audit_entries, execute_raw_query, has_column, load_products_for_index, log_etl_run, get_brands, get_categories, get_tags)
+- Implemented ProductService delegation methods (list_products_joined, get_dashboard_data, get_audit_log, get_last_runs, execute_sql_query)
+- Implemented GET / dashboard route and GET /products product list route
+- Fixed bug: products table has no currency column → use 'EUR' AS currency literal
+- Created docker-compose.override.yml to bind-mount source dirs for live code reload
 
 - Executed Phase 1 Plan 02: MySQLRepositoryImpl write methods (create/update/delete/get_by_id + get_brands/categories/tags)
 - Implemented ProductService write methods (create_product_with_relations, update_product, delete_product, _resolve_tag_ids)
