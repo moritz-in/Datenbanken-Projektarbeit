@@ -6,3 +6,4 @@ services:
       - ./repositories:/app/repositories:ro
       - ./services:/app/services:ro
       - ./routes:/app/routes:ro
+      - ./templates:/app/templates:ro

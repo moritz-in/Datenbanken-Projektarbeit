@@ -447,21 +447,149 @@ class MySQLRepositoryImpl(MySQLRepository):
             return [dict(r) for r in result.mappings().all()]
 
     # ------------------------------------------------------------------
-    # Write method stubs — implemented in Plan 02
+    # Write methods (Plan 02)
     # ------------------------------------------------------------------
 
     def create_product(self, data: dict) -> dict:
-        """Create a new product — implemented in Plan 02."""
-        raise NotImplementedError("TODO: Phase 1 Plan 02")
+        """Create a new product with tag associations in a single transaction.
+
+        Args:
+            data: dict with keys: name, sku, price, brand_id, category_id, tag_ids (list[int])
+
+        Returns:
+            dict with product_id of the newly created product
+
+        Raises:
+            sqlalchemy.exc.IntegrityError: On duplicate SKU — rolled back automatically
+        """
+        with self._session_factory() as session:
+            with session.begin():
+                result = session.execute(
+                    text(
+                        "INSERT INTO products (name, sku, price, brand_id, category_id) "
+                        "VALUES (:name, :sku, :price, :brand_id, :category_id)"
+                    ),
+                    {
+                        "name": data["name"],
+                        "sku": data.get("sku"),
+                        "price": data["price"],
+                        "brand_id": data["brand_id"],
+                        "category_id": data["category_id"],
+                    },
+                )
+                product_id = result.lastrowid
+                for tag_id in data.get("tag_ids", []):
+                    session.execute(
+                        text(
+                            "INSERT INTO product_tags (product_id, tag_id) VALUES (:product_id, :tag_id)"
+                        ),
+                        {"product_id": product_id, "tag_id": tag_id},
+                    )
+        return {"product_id": product_id}
 
     def update_product(self, product_id: int, data: dict) -> dict:
-        """Update an existing product — implemented in Plan 02."""
-        raise NotImplementedError("TODO: Phase 1 Plan 02")
+        """Update an existing product — SKU is never updated.
+
+        Args:
+            product_id: Product primary key
+            data: dict with keys: name, price, brand_id, category_id, tag_ids (list[int])
+
+        Returns:
+            dict with product_id
+
+        Raises:
+            sqlalchemy.exc.IntegrityError: On FK violation
+        """
+        with self._session_factory() as session:
+            with session.begin():
+                session.execute(
+                    text(
+                        "UPDATE products SET name = :name, price = :price, "
+                        "brand_id = :brand_id, category_id = :category_id "
+                        "WHERE id = :product_id"
+                    ),
+                    {
+                        "name": data["name"],
+                        "price": data["price"],
+                        "brand_id": data["brand_id"],
+                        "category_id": data["category_id"],
+                        "product_id": product_id,
+                    },
+                )
+                # Replace tags: delete existing then re-insert
+                session.execute(
+                    text("DELETE FROM product_tags WHERE product_id = :product_id"),
+                    {"product_id": product_id},
+                )
+                for tag_id in data.get("tag_ids", []):
+                    session.execute(
+                        text(
+                            "INSERT INTO product_tags (product_id, tag_id) VALUES (:product_id, :tag_id)"
+                        ),
+                        {"product_id": product_id, "tag_id": tag_id},
+                    )
+        return {"product_id": product_id}
 
     def delete_product(self, product_id: int) -> None:
-        """Delete a product — implemented in Plan 02."""
-        raise NotImplementedError("TODO: Phase 1 Plan 02")
+        """Delete a product and its tag associations.
+
+        Deletes product_tags first to avoid FK violation, then deletes the product row.
+
+        Args:
+            product_id: Product primary key
+
+        Raises:
+            sqlalchemy.exc.IntegrityError: If product referenced by other FKs
+        """
+        with self._session_factory() as session:
+            with session.begin():
+                session.execute(
+                    text("DELETE FROM product_tags WHERE product_id = :product_id"),
+                    {"product_id": product_id},
+                )
+                session.execute(
+                    text("DELETE FROM products WHERE id = :product_id"),
+                    {"product_id": product_id},
+                )
 
     def get_product_by_id(self, product_id: int) -> "dict | None":
-        """Get a product by its ID — implemented in Plan 02."""
-        raise NotImplementedError("TODO: Phase 1 Plan 02")
+        """Get a product by ID with brand, category, and tags.
+
+        Args:
+            product_id: Product primary key
+
+        Returns:
+            dict with {product_id, name, sku, price, brand_id, category_id,
+                       brand, category, tags_str} or None if not found
+        """
+        with self._session_factory() as session:
+            row = session.execute(
+                text(
+                    "SELECT p.id AS product_id, p.name, p.sku, p.price, "
+                    "p.brand_id, p.category_id, "
+                    "b.name AS brand, c.name AS category "
+                    "FROM products p "
+                    "LEFT JOIN brands b ON p.brand_id = b.id "
+                    "LEFT JOIN categories c ON p.category_id = c.id "
+                    "WHERE p.id = :product_id"
+                ),
+                {"product_id": product_id},
+            ).mappings().one_or_none()
+
+            if row is None:
+                return None
+
+            product = dict(row)
+
+            # Fetch tags as comma-separated string for form pre-fill
+            tags = session.execute(
+                text(
+                    "SELECT t.name FROM tags t "
+                    "JOIN product_tags pt ON t.id = pt.tag_id "
+                    "WHERE pt.product_id = :product_id ORDER BY t.name"
+                ),
+                {"product_id": product_id},
+            ).scalars().all()
+
+            product["tags_str"] = ", ".join(tags)
+            return product
