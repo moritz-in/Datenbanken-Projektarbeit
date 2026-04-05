@@ -21,11 +21,11 @@
 - [x] **TXN-01**: `MySQLRepositoryImpl.create_product()` implementiert mit explizitem `with session.begin():` — bei Fehler (doppelte SKU) automatischer Rollback
 - [x] **TXN-02**: `MySQLRepositoryImpl.update_product()` implementiert mit explizitem Transaction-Block
 - [x] **TXN-03**: `MySQLRepositoryImpl.delete_product()` implementiert mit explizitem Transaction-Block (referenzielle Integritätsprüfung)
-- [ ] **TXN-04**: Rollback-Demo für doppelte SKU vorhanden und über UI auslösbar
-- [ ] **TXN-05**: Rollback-Demo für referenzielle Integrität (Delete mit aktiven Bestellungen/Tags) vorhanden
+- [x] **TXN-04**: Rollback-Demo für doppelte SKU vorhanden und über UI auslösbar
+- [x] **TXN-05**: Rollback-Demo für referenzielle Integrität (Delete mit aktiven Bestellungen/Tags) vorhanden
 - [x] **TXN-06**: `ProductService.create_product_with_relations()` implementiert (Brand, Category, Tags in einer Transaktion)
 - [x] **TXN-07**: `ProductService.update_product()` und `delete_product()` implementiert
-- [ ] **TXN-08**: Route `products.py` vollständig implementiert — CRUD-Formulare mit Flash-Messages bei Fehler und Erfolg
+- [x] **TXN-08**: Route `products.py` vollständig implementiert — CRUD-Formulare mit Flash-Messages bei Fehler und Erfolg
 
 ### A3 — Trigger
 
@@ -121,11 +121,11 @@ Wird nach Roadmap-Erstellung befüllt.
 | TXN-01 | Phase 1 | Complete |
 | TXN-02 | Phase 1 | Complete |
 | TXN-03 | Phase 1 | Complete |
-| TXN-04 | Phase 1 | Pending |
-| TXN-05 | Phase 1 | Pending |
+| TXN-04 | Phase 1 | Complete |
+| TXN-05 | Phase 1 | Complete |
 | TXN-06 | Phase 1 | Complete |
 | TXN-07 | Phase 1 | Complete |
-| TXN-08 | Phase 1 | Pending |
+| TXN-08 | Phase 1 | Complete |
 | TRIG-01 | Phase 2 | Pending |
 | TRIG-02 | Phase 2 | Pending |
 | TRIG-03 | Phase 2 | Pending |

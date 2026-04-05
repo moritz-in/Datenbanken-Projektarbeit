@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-05T19:09:15.428Z"
+last_updated: "2026-04-05T19:22:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 71
+  completed_plans: 7
+  percent: 100
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
 **Last updated:** 2026-04-05
-**Session:** Phase 1 Plan 02 execution — MySQLRepositoryImpl write methods + ProductService + product_form.html
+**Session:** Phase 1 Plan 03 execution — CRUD routes (routes/products.py) + Actions column (products.html)
 
 ---
 
@@ -31,14 +31,14 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 1 — MySQL CRUD & Transaktionen (A2) — In Progress
-**Active Plan:** Plan 02 complete — Plan 03 (routes/products.py) is next
-**Status:** In progress
+**Active Phase:** Phase 1 — MySQL CRUD & Transaktionen (A2) — **Complete**
+**Active Plan:** Plan 03 complete — Phase 1 DONE
+**Status:** Phase 1 complete, advance to Phase 2
 
 ```
-Progress: [███████░░░] 71%
-           [COMPLETE |  2/3    |         |         |         |        ]
-           [ 100%    |  67%    |   0%    |   0%    |   0%    |   0%  ]
+Progress: [██████████] 100%
+           [COMPLETE | COMPLETE |         |         |         |        ]
+           [ 100%    | 100%    |   0%    |   0%    |   0%    |   0%  ]
 ```
 
 ---
@@ -48,7 +48,7 @@ Progress: [███████░░░] 71%
 | Phase | Name | Requirements | Status | Completed |
 |-------|------|-------------|--------|-----------|
 | 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Complete** | 2026-04-02 |
-| 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **In Progress** | - |
+| 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
 | 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | Pending | - |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
 | 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
@@ -63,17 +63,18 @@ Progress: [███████░░░] 71%
 | Metric | Value |
 |--------|-------|
 | Phases total | 6 |
-| Phases complete | 1 |
-| Phases in progress | 1 |
+| Phases complete | 2 |
+| Phases in progress | 0 |
 | Requirements mapped | 50/50 |
-| Requirements complete | 8/50 (FOUND-01–08) |
+| Requirements complete | 17/50 (FOUND-01–08, TXN-01–08, ROUTE-01) |
 | Plans created | 7 |
-| Plans complete | 5 |
+| Plans complete | 7 |
 
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
 | Phase 01-mysql-crud-transaktionen-a2 P02 | 3min | 2 tasks | 3 files |
 | Phase 01-mysql-crud-transaktionen-a2 P01 | 17m | 2 tasks | 5 files |
+| Phase 01-mysql-crud-transaktionen-a2 P03 | 9m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -93,7 +94,9 @@ Progress: [███████░░░] 71%
 | SKU immutable after creation | update_product() has no sku param; UPDATE SET excludes sku column — enforced at repo layer |
 | Unknown tag names silently ignored in _resolve_tag_ids() | Phase 1 scope: no auto-create; tags must pre-exist; simpler UX |
 | Use 'EUR' AS currency literal in SELECT | products table has no currency column; template needs it for display; literal matches create_product hardcoded 'EUR' |
-| docker-compose.override.yml bind-mounts source dirs | Avoids 5+ minute Docker image rebuild cycle; override file auto-applied by docker compose up |
+| IntegrityError caught at route layer — repository propagates, route shows flash | TXN-04/TXN-05 rollback demo visible to user without exposing raw SQL errors |
+| Single-click delete via POST form — no JS confirmation | CONTEXT.md locked decision; PRG redirect on all delete outcomes |
+| templates/ bind-mounted in docker-compose.override.yml | Enables live template reload without Docker image rebuild (5+ min savings) |
 
 ### Known Risks
 
@@ -144,20 +147,29 @@ Progress: [███████░░░] 71%
 - Added ProductService delegation methods (get_product_by_id, get_brands, get_categories)
 - Created templates/product_form.html shared Bootstrap 5 create/edit form
 
+- Executed Phase 1 Plan 03: CRUD routes in routes/products.py + Actions column in products.html
+- Implemented new_product, create_product, edit_product, update_product, delete_product route handlers
+- Added Aktionen column with Edit/Delete buttons to products.html
+- Auto-fixed: Plan 02 stubs not implemented → implemented create/update/delete/get_product_by_id in mysql_repository.py
+- Auto-fixed: Wrong column name (p.product_id → p.id) and currency column not in products table
+- Auto-fixed: templates/ bind-mount added to docker-compose.override.yml
+- Phase 1 MySQL CRUD & Transaktionen COMPLETE
+
 ### What to Do Next
 
-1. Execute Phase 1 Plan 03 — routes/products.py CRUD routes
-2. Plan 03 depends on Plan 01 (ABC stubs + list) + Plan 02 (write methods) — both now complete
-3. Plan 03 adds: GET /products/create, POST /products/create, GET /products/<id>/edit, POST /products/<id>/edit, POST /products/<id>/delete
+1. Start Phase 2 — MySQL DDL Features (A3, A4, A5): triggers, stored procedures, indexes
+2. Phase 2 plans: triggers (TRG-01–03), stored procedures (PROC-01–04), indexes (IDX-01–06)
+3. Phase 2 requires Phase 1 complete — now done
 
 ### Files Written This Session
 
-- `repositories/mysql_repository.py` — write methods + lookup helpers added
-- `services/product_service.py` — write methods + delegation methods added
-- `templates/product_form.html` — new shared create/edit form
-- `.planning/phases/01-mysql-crud-transaktionen-a2/01-02-SUMMARY.md`
+- `routes/products.py` — full CRUD routes implemented
+- `templates/products.html` — Actions column added
+- `repositories/mysql_repository.py` — write methods implemented (fix for Plan 02 stubs)
+- `docker-compose.override.yml` — templates/ bind-mount added
+- `.planning/phases/01-mysql-crud-transaktionen-a2/01-03-SUMMARY.md`
 
 ---
 
 *State initialized: 2026-04-02*
-*Next action: Execute Phase 1 Plan 03 (CRUD routes)*
+*Next action: Start Phase 2 — MySQL DDL Features (triggers, stored procedures, indexes)*

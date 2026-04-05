@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 0 — Foundation & Blockers** — Schema fixes, factory singletons, NoOp repair, PostgreSQL dead-code removal (completed 2026-04-02)
-- [ ] **Phase 1 — MySQL CRUD & Transaktionen (A2)** — Repository write path with explicit transactions, rollback demos, CRUD routes
+- [x] **Phase 1 — MySQL CRUD & Transaktionen (A2)** — Repository write path with explicit transactions, rollback demos, CRUD routes (completed 2026-04-05)
 - [ ] **Phase 2 — MySQL DDL Features (A3, A4, A5)** — Trigger, Stored Procedure, B-Tree indexes, EXPLAIN analysis
 - [ ] **Phase 3 — Qdrant Vektor-Suche (A6)** — Vector ETL, semantic search route, index build route, ETL logging
 - [ ] **Phase 4 — Neo4j Graph & RAG (A7)** — Graph population, RAG pipeline, LLM answer generation, RAG route
@@ -87,7 +87,7 @@
 - ⚠️ **Pitfall 4 (nested commit):** Never call `session.commit()` inside a `with session.begin():` block — it commits the outermost transaction, not an inner savepoint.
 - ⚠️ **Anti-Pattern 1:** Transaction management belongs in `MySQLRepositoryImpl`, NOT in `ProductService`. Each repository method is its own atomic unit — the service layer calls them sequentially without owning session state.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Read path: MySQLRepositoryImpl read methods + ProductService reads + dashboard route (Wave 1)
@@ -247,7 +247,7 @@ Plans:
 | Phase | Requirements | Plans Complete | Status | Completed |
 |-------|-------------|----------------|--------|-----------|
 | 0. Foundation & Blockers | 8 (FOUND-01–08) | 0/TBD | Not started | - |
-| 1. MySQL CRUD & Transaktionen | 2/3 | In Progress|  | - |
+| 1. MySQL CRUD & Transaktionen | 3/3 | Complete   | 2026-04-05 | - |
 | 2. MySQL DDL Features | 16 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02) | 0/TBD | Not started | - |
 | 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
 | 4. Neo4j Graph & RAG | 7 (GRAPH-01–07) | 0/TBD | Not started | - |
