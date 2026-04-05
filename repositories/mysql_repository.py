@@ -46,6 +46,41 @@ class MySQLRepository(ABC):
         """Check if a table has a specific column"""
         pass
 
+    @abstractmethod
+    def get_brands(self) -> list[dict]:
+        """Get all brands"""
+        pass
+
+    @abstractmethod
+    def get_categories(self) -> list[dict]:
+        """Get all categories"""
+        pass
+
+    @abstractmethod
+    def get_tags(self) -> list[dict]:
+        """Get all tags"""
+        pass
+
+    @abstractmethod
+    def create_product(self, data: dict) -> dict:
+        """Create a new product"""
+        pass
+
+    @abstractmethod
+    def update_product(self, product_id: int, data: dict) -> dict:
+        """Update an existing product"""
+        pass
+
+    @abstractmethod
+    def delete_product(self, product_id: int) -> None:
+        """Delete a product"""
+        pass
+
+    @abstractmethod
+    def get_product_by_id(self, product_id: int) -> "dict | None":
+        """Get a product by its ID"""
+        pass
+
 
 class MySQLRepositoryImpl(MySQLRepository):
     """Concrete implementation of MySQL repository"""
@@ -65,6 +100,10 @@ class MySQLRepositoryImpl(MySQLRepository):
         """Get MySQL session from factory"""
         return self._session_factory
 
+    # ------------------------------------------------------------------
+    # Read methods (Plan 01)
+    # ------------------------------------------------------------------
+
     def get_products_with_joins(self, page: int, page_size: int) -> dict:
         """
         Get paginated products with brand, category, and tags joined.
@@ -76,19 +115,93 @@ class MySQLRepositoryImpl(MySQLRepository):
         Returns:
             dict with 'items' (list of products) and 'total' (total count)
         """
-        raise NotImplementedError("TODO: implement product list query.")
+        offset = (page - 1) * page_size
+        with self._session_factory() as session:
+            # Total count
+            count_result = session.execute(
+                text("SELECT COUNT(*) AS cnt FROM products")
+            )
+            total = count_result.mappings().one()["cnt"]
+
+            # Main query with joins
+            result = session.execute(
+                text(
+                    """
+                    SELECT p.id AS product_id, p.name, p.price, p.currency,
+                           b.name AS brand, c.name AS category
+                    FROM products p
+                    LEFT JOIN brands b ON p.brand_id = b.id
+                    LEFT JOIN categories c ON p.category_id = c.id
+                    ORDER BY p.id
+                    LIMIT :limit OFFSET :offset
+                    """
+                ),
+                {"limit": page_size, "offset": offset},
+            )
+            rows = [dict(r) for r in result.mappings().all()]
+
+        if not rows:
+            return {"items": [], "total": total}
+
+        # Attach tags via separate query
+        product_ids = [r["product_id"] for r in rows]
+        tags_by_product: dict[int, list[str]] = {pid: [] for pid in product_ids}
+
+        with self._session_factory() as session:
+            tag_result = session.execute(
+                text(
+                    """
+                    SELECT pt.product_id, t.name
+                    FROM product_tags pt
+                    JOIN tags t ON pt.tag_id = t.id
+                    WHERE pt.product_id IN :ids
+                    """
+                ),
+                {"ids": tuple(product_ids)},
+            )
+            for tag_row in tag_result.mappings().all():
+                tags_by_product[tag_row["product_id"]].append(tag_row["name"])
+
+        for row in rows:
+            row["tags"] = tags_by_product.get(row["product_id"], [])
+
+        return {"items": rows, "total": total}
 
     def get_dashboard_stats(self) -> dict:
         """
-        Get dashboard statistics including MySQL counts, Qdrant status, and last runs.
-
-        Note: This method only returns MySQL-related stats. Qdrant stats should be
-        retrieved from QdrantRepository.
+        Get dashboard statistics including MySQL counts.
 
         Returns:
             dict with 'mysql_counts' and 'last_runs'
         """
-        raise NotImplementedError("TODO: implement dashboard stats.")
+        try:
+            with self._session_factory() as session:
+                result = session.execute(
+                    text(
+                        """
+                        SELECT 'products' AS tbl, COUNT(*) AS cnt FROM products
+                        UNION ALL SELECT 'brands', COUNT(*) FROM brands
+                        UNION ALL SELECT 'categories', COUNT(*) FROM categories
+                        UNION ALL SELECT 'tags', COUNT(*) FROM tags
+                        """
+                    )
+                )
+                counts: dict[str, int] = {}
+                for row in result.mappings().all():
+                    counts[row["tbl"]] = row["cnt"]
+
+            return {
+                "mysql_counts": {
+                    "products": counts.get("products", 0),
+                    "brands": counts.get("brands", 0),
+                    "categories": counts.get("categories", 0),
+                    "tags": counts.get("tags", 0),
+                },
+                "last_runs": [],
+            }
+        except Exception as e:
+            log.error("Error fetching dashboard stats: %s", e)
+            return {"mysql_counts": {"error": str(e)}, "last_runs": []}
 
     def get_audit_entries(self, page: int, page_size: int) -> dict:
         """
@@ -101,7 +214,32 @@ class MySQLRepositoryImpl(MySQLRepository):
         Returns:
             dict with 'items' (list of audit entries) and 'total' (total count)
         """
-        raise NotImplementedError("TODO: implement audit entries query.")
+        offset = (page - 1) * page_size
+        with self._session_factory() as session:
+            count_result = session.execute(
+                text("SELECT COUNT(*) AS cnt FROM etl_run_log")
+            )
+            total = count_result.mappings().one()["cnt"]
+
+            result = session.execute(
+                text(
+                    """
+                    SELECT id, strategy, started_at, finished_at,
+                           products_processed, products_written, status
+                    FROM etl_run_log
+                    ORDER BY started_at DESC
+                    LIMIT :limit OFFSET :offset
+                    """
+                ),
+                {"limit": page_size, "offset": offset},
+            )
+            items = []
+            for row in result.mappings().all():
+                entry = dict(row)
+                entry["run_timestamp"] = str(entry.get("started_at", ""))
+                items.append(entry)
+
+        return {"items": items, "total": total}
 
     def get_last_runs(self, limit: int = 10) -> list[dict]:
         """
@@ -113,7 +251,25 @@ class MySQLRepositoryImpl(MySQLRepository):
         Returns:
             List of run log dictionaries
         """
-        raise NotImplementedError("TODO: implement last runs query.")
+        with self._session_factory() as session:
+            result = session.execute(
+                text(
+                    """
+                    SELECT id, strategy, started_at, finished_at,
+                           products_processed, products_written, status
+                    FROM etl_run_log
+                    ORDER BY started_at DESC
+                    LIMIT :limit
+                    """
+                ),
+                {"limit": limit},
+            )
+            runs = []
+            for row in result.mappings().all():
+                entry = dict(row)
+                entry["run_timestamp"] = str(entry.get("started_at", ""))
+                runs.append(entry)
+        return runs
 
     def execute_raw_query(self, query: str) -> list[dict]:
         """
@@ -131,15 +287,28 @@ class MySQLRepositoryImpl(MySQLRepository):
             ValueError: If query is not SELECT or contains forbidden keywords
             Exception: On SQL execution errors
         """
-        raise NotImplementedError("TODO: implement raw SQL execution.")
+        stripped = self._strip_string_literals(query.upper())
+        if not stripped.lstrip().startswith("SELECT"):
+            raise ValueError("Only SELECT queries are allowed.")
+        forbidden = re.compile(
+            r"\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|EXEC)\b"
+        )
+        if forbidden.search(stripped):
+            raise ValueError("Query contains forbidden keywords.")
+
+        with self._session_factory() as session:
+            result = session.execute(text(query))
+            return [dict(r) for r in result.mappings()]
 
     @staticmethod
     def _strip_string_literals(query: str) -> str:
-        raise NotImplementedError("TODO: implement string literal stripping.")
+        """Replace string literal content with empty strings for security checks."""
+        return re.sub(r"'[^']*'", "''", query)
 
     @staticmethod
     def _extract_table_names(query: str) -> list[str]:
-        raise NotImplementedError("TODO: implement table name extraction.")
+        """Extract table names from FROM/JOIN clauses."""
+        return re.findall(r"\b(?:FROM|JOIN)\s+(\w+)", query, re.IGNORECASE)
 
     def has_column(self, table: str, column: str) -> bool:
         """
@@ -152,7 +321,21 @@ class MySQLRepositoryImpl(MySQLRepository):
         Returns:
             True if column exists, False otherwise
         """
-        raise NotImplementedError("TODO: implement column existence check.")
+        with self._session_factory() as session:
+            result = session.execute(
+                text(
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND table_name = :table
+                      AND column_name = :column
+                    """
+                ),
+                {"table": table, "column": column},
+            )
+            cnt = result.mappings().one()["cnt"]
+        return bool(cnt > 0)
 
     def load_products_for_index(
         self, limit: Optional[int] = None, include_tags: bool = True
@@ -167,7 +350,44 @@ class MySQLRepositoryImpl(MySQLRepository):
         Returns:
             List of product dictionaries with all fields
         """
-        raise NotImplementedError("TODO: implement product load for indexing.")
+        sql = """
+            SELECT p.id, p.name, p.description, p.price, p.currency,
+                   p.sku, p.load_class, p.application,
+                   b.name AS brand, c.name AS category
+            FROM products p
+            LEFT JOIN brands b ON p.brand_id = b.id
+            LEFT JOIN categories c ON p.category_id = c.id
+        """
+        params: dict = {}
+        if limit is not None:
+            sql += " LIMIT :limit"
+            params["limit"] = limit
+
+        with self._session_factory() as session:
+            result = session.execute(text(sql), params)
+            rows = [dict(r) for r in result.mappings().all()]
+
+        if include_tags and rows:
+            product_ids = [r["id"] for r in rows]
+            tags_by_product: dict[int, list[str]] = {pid: [] for pid in product_ids}
+            with self._session_factory() as session:
+                tag_result = session.execute(
+                    text(
+                        """
+                        SELECT pt.product_id, t.name
+                        FROM product_tags pt
+                        JOIN tags t ON pt.tag_id = t.id
+                        WHERE pt.product_id IN :ids
+                        """
+                    ),
+                    {"ids": tuple(product_ids)},
+                )
+                for tag_row in tag_result.mappings().all():
+                    tags_by_product[tag_row["product_id"]].append(tag_row["name"])
+            for row in rows:
+                row["tags"] = tags_by_product.get(row["id"], [])
+
+        return rows
 
     def log_etl_run(
         self, strategy: str, products_processed: int, products_written: int
@@ -180,4 +400,68 @@ class MySQLRepositoryImpl(MySQLRepository):
             products_processed: Number of products processed
             products_written: Number of products written to index
         """
-        raise NotImplementedError("TODO: implement ETL run logging.")
+        with self._session_factory() as session:
+            with session.begin():
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO etl_run_log
+                            (strategy, started_at, finished_at,
+                             products_processed, products_written, status)
+                        VALUES (:strategy, NOW(), NOW(), :proc, :written, 'success')
+                        """
+                    ),
+                    {
+                        "strategy": strategy,
+                        "proc": products_processed,
+                        "written": products_written,
+                    },
+                )
+
+    # ------------------------------------------------------------------
+    # Lookup helpers (Plan 01 — needed by Plan 02 for form dropdowns)
+    # ------------------------------------------------------------------
+
+    def get_brands(self) -> list[dict]:
+        """Get all brands ordered by name."""
+        with self._session_factory() as session:
+            result = session.execute(
+                text("SELECT id, name FROM brands ORDER BY name")
+            )
+            return [dict(r) for r in result.mappings().all()]
+
+    def get_categories(self) -> list[dict]:
+        """Get all categories ordered by name."""
+        with self._session_factory() as session:
+            result = session.execute(
+                text("SELECT id, name FROM categories ORDER BY name")
+            )
+            return [dict(r) for r in result.mappings().all()]
+
+    def get_tags(self) -> list[dict]:
+        """Get all tags ordered by name."""
+        with self._session_factory() as session:
+            result = session.execute(
+                text("SELECT id, name FROM tags ORDER BY name")
+            )
+            return [dict(r) for r in result.mappings().all()]
+
+    # ------------------------------------------------------------------
+    # Write method stubs — implemented in Plan 02
+    # ------------------------------------------------------------------
+
+    def create_product(self, data: dict) -> dict:
+        """Create a new product — implemented in Plan 02."""
+        raise NotImplementedError("TODO: Phase 1 Plan 02")
+
+    def update_product(self, product_id: int, data: dict) -> dict:
+        """Update an existing product — implemented in Plan 02."""
+        raise NotImplementedError("TODO: Phase 1 Plan 02")
+
+    def delete_product(self, product_id: int) -> None:
+        """Delete a product — implemented in Plan 02."""
+        raise NotImplementedError("TODO: Phase 1 Plan 02")
+
+    def get_product_by_id(self, product_id: int) -> "dict | None":
+        """Get a product by its ID — implemented in Plan 02."""
+        raise NotImplementedError("TODO: Phase 1 Plan 02")
