@@ -18,13 +18,13 @@
 
 ### A2 — Transaktionen
 
-- [ ] **TXN-01**: `MySQLRepositoryImpl.create_product()` implementiert mit explizitem `with session.begin():` — bei Fehler (doppelte SKU) automatischer Rollback
-- [ ] **TXN-02**: `MySQLRepositoryImpl.update_product()` implementiert mit explizitem Transaction-Block
-- [ ] **TXN-03**: `MySQLRepositoryImpl.delete_product()` implementiert mit explizitem Transaction-Block (referenzielle Integritätsprüfung)
+- [x] **TXN-01**: `MySQLRepositoryImpl.create_product()` implementiert mit explizitem `with session.begin():` — bei Fehler (doppelte SKU) automatischer Rollback
+- [x] **TXN-02**: `MySQLRepositoryImpl.update_product()` implementiert mit explizitem Transaction-Block
+- [x] **TXN-03**: `MySQLRepositoryImpl.delete_product()` implementiert mit explizitem Transaction-Block (referenzielle Integritätsprüfung)
 - [ ] **TXN-04**: Rollback-Demo für doppelte SKU vorhanden und über UI auslösbar
 - [ ] **TXN-05**: Rollback-Demo für referenzielle Integrität (Delete mit aktiven Bestellungen/Tags) vorhanden
-- [ ] **TXN-06**: `ProductService.create_product_with_relations()` implementiert (Brand, Category, Tags in einer Transaktion)
-- [ ] **TXN-07**: `ProductService.update_product()` und `delete_product()` implementiert
+- [x] **TXN-06**: `ProductService.create_product_with_relations()` implementiert (Brand, Category, Tags in einer Transaktion)
+- [x] **TXN-07**: `ProductService.update_product()` und `delete_product()` implementiert
 - [ ] **TXN-08**: Route `products.py` vollständig implementiert — CRUD-Formulare mit Flash-Messages bei Fehler und Erfolg
 
 ### A3 — Trigger
@@ -118,13 +118,13 @@ Wird nach Roadmap-Erstellung befüllt.
 | FOUND-06 | Phase 0 | Complete |
 | FOUND-07 | Phase 0 | Complete |
 | FOUND-08 | Phase 0 | Complete |
-| TXN-01 | Phase 1 | Pending |
-| TXN-02 | Phase 1 | Pending |
-| TXN-03 | Phase 1 | Pending |
+| TXN-01 | Phase 1 | Complete |
+| TXN-02 | Phase 1 | Complete |
+| TXN-03 | Phase 1 | Complete |
 | TXN-04 | Phase 1 | Pending |
 | TXN-05 | Phase 1 | Pending |
-| TXN-06 | Phase 1 | Pending |
-| TXN-07 | Phase 1 | Pending |
+| TXN-06 | Phase 1 | Complete |
+| TXN-07 | Phase 1 | Complete |
 | TXN-08 | Phase 1 | Pending |
 | TRIG-01 | Phase 2 | Pending |
 | TRIG-02 | Phase 2 | Pending |

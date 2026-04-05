@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-02T10:54:04.466Z"
+status: in-progress
+last_updated: "2026-04-05T18:55:17.029Z"
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_plans: 7
+  completed_plans: 5
+  percent: 71
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
-**Last updated:** 2026-04-02
-**Session:** Phase 0 Plan 04 execution — /validate route + REQUIREMENTS.md gap closure
+**Last updated:** 2026-04-05
+**Session:** Phase 1 Plan 02 execution — MySQLRepositoryImpl write methods + ProductService + product_form.html
 
 ---
 
@@ -31,14 +31,14 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 0 — Foundation & Blockers (Complete)
-**Active Plan:** Plan 04 complete — Phase 0 all 4 plans done
-**Status:** Ready to plan
+**Active Phase:** Phase 1 — MySQL CRUD & Transaktionen (A2) — In Progress
+**Active Plan:** Plan 02 complete — Plan 03 (routes/products.py) is next
+**Status:** In progress
 
 ```
-Progress: [██████████] 100%
-           [  ACTIVE |         |         |         |         |        ]
-           [   0%    |   0%    |   0%    |   0%    |   0%    |   0%  ]
+Progress: [███████░░░] 71%
+           [COMPLETE |  2/3    |         |         |         |        ]
+           [ 100%    |  67%    |   0%    |   0%    |   0%    |   0%  ]
 ```
 
 ---
@@ -48,7 +48,7 @@ Progress: [██████████] 100%
 | Phase | Name | Requirements | Status | Completed |
 |-------|------|-------------|--------|-----------|
 | 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Complete** | 2026-04-02 |
-| 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | Pending | - |
+| 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **In Progress** | - |
 | 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | Pending | - |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
 | 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
@@ -64,14 +64,15 @@ Progress: [██████████] 100%
 |--------|-------|
 | Phases total | 6 |
 | Phases complete | 1 |
-| Phases in progress | 0 |
+| Phases in progress | 1 |
 | Requirements mapped | 50/50 |
 | Requirements complete | 8/50 (FOUND-01–08) |
-| Plans created | 4 |
-| Plans complete | 4 |
+| Plans created | 7 |
+| Plans complete | 5 |
 
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
+| Phase 01-mysql-crud-transaktionen-a2 P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Progress: [██████████] 100%
 | `ensure_collection()` before every upsert | Qdrant has no auto-create; 404 on fresh container; idempotent check is cheap |
 | `.tolist()` on all numpy vectors | `PointStruct.vector` field requires `list[float]`; ndarray causes JSON serialization failure in some client versions |
 | `cursor.nextset()` after every `CALL import_product()` | MySQL returns implicit result set; missing cleanup corrupts connection pool state |
+| SKU immutable after creation | update_product() has no sku param; UPDATE SET excludes sku column — enforced at repo layer |
+| Unknown tag names silently ignored in _resolve_tag_ids() | Phase 1 scope: no auto-create; tags must pre-exist; simpler UX |
 
 ### Known Risks
 
@@ -125,27 +128,25 @@ Progress: [██████████] 100%
 
 ### What Was Done This Session
 
-- Executed Phase 0 Plan 04: closed /validate route NotImplementedError stub
-- Exposed `db.mysql_engine` in db.py and wired in app.py `create_app()`
-- Implemented `/validate` POST handler calling `validation.validate_mysql(db.mysql_engine)`
-- Updated REQUIREMENTS.md FOUND-02/FOUND-03 column specs to match actual implementation
-- Marked FOUND-01–08 Complete in REQUIREMENTS.md
+- Executed Phase 1 Plan 02: MySQLRepositoryImpl write methods (create/update/delete/get_by_id + get_brands/categories/tags)
+- Implemented ProductService write methods (create_product_with_relations, update_product, delete_product, _resolve_tag_ids)
+- Added ProductService delegation methods (get_product_by_id, get_brands, get_categories)
+- Created templates/product_form.html shared Bootstrap 5 create/edit form
 
 ### What to Do Next
 
-1. Run `/gsd-execute-phase 1` to start Phase 1 — MySQL CRUD & Transaktionen
-2. Phase 1 covers: `MySQLRepositoryImpl` CRUD methods, rollback demo, `ProductService`, routes/products.py
-3. Prerequisite: Phase 0 verifier should now score 12/12 — all validate_mysql() checks pass
+1. Execute Phase 1 Plan 03 — routes/products.py CRUD routes
+2. Plan 03 depends on Plan 01 (ABC stubs + list) + Plan 02 (write methods) — both now complete
+3. Plan 03 adds: GET /products/create, POST /products/create, GET /products/<id>/edit, POST /products/<id>/edit, POST /products/<id>/delete
 
 ### Files Written This Session
 
-- `routes/validate.py` — working /validate POST handler
-- `db.py` — added mysql_engine = None
-- `app.py` — wires db.mysql_engine in create_app()
-- `.planning/REQUIREMENTS.md` — FOUND-02/03 specs updated, FOUND-01–08 marked Complete
-- `.planning/phases/00-foundation-blockers/00-04-SUMMARY.md`
+- `repositories/mysql_repository.py` — write methods + lookup helpers added
+- `services/product_service.py` — write methods + delegation methods added
+- `templates/product_form.html` — new shared create/edit form
+- `.planning/phases/01-mysql-crud-transaktionen-a2/01-02-SUMMARY.md`
 
 ---
 
 *State initialized: 2026-04-02*
-*Next action: Plan Phase 0*
+*Next action: Execute Phase 1 Plan 03 (CRUD routes)*

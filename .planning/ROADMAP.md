@@ -87,7 +87,7 @@
 - ⚠️ **Pitfall 4 (nested commit):** Never call `session.commit()` inside a `with session.begin():` block — it commits the outermost transaction, not an inner savepoint.
 - ⚠️ **Anti-Pattern 1:** Transaction management belongs in `MySQLRepositoryImpl`, NOT in `ProductService`. Each repository method is its own atomic unit — the service layer calls them sequentially without owning session state.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — Read path: MySQLRepositoryImpl read methods + ProductService reads + dashboard route (Wave 1)
@@ -247,7 +247,7 @@ Plans:
 | Phase | Requirements | Plans Complete | Status | Completed |
 |-------|-------------|----------------|--------|-----------|
 | 0. Foundation & Blockers | 8 (FOUND-01–08) | 0/TBD | Not started | - |
-| 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 0/TBD | Not started | - |
+| 1. MySQL CRUD & Transaktionen | 1/3 | In Progress|  | - |
 | 2. MySQL DDL Features | 16 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02) | 0/TBD | Not started | - |
 | 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
 | 4. Neo4j Graph & RAG | 7 (GRAPH-01–07) | 0/TBD | Not started | - |
