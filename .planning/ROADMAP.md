@@ -53,13 +53,7 @@
 - ⚠️ **Pitfall 14 (RepositoryFactory race):** Same double-checked locking pattern required in `RepositoryFactory.get_*()` methods.
 - ⚠️ **Pitfall 8 (NoOp crashes):** `NoOpNeo4jRepository` currently raises `NotImplementedError` — fix ALL three methods before implementing any factory.
 
-**Plans:** 4/4 plans complete
-
-Plans:
-- [x] 00-01-PLAN.md — Rename schema.sql tables to plural + add etl_run_log, product_change_log, sku DDL
-- [x] 00-02-PLAN.md — Fix NoOpNeo4jRepository safe returns + remove PostgreSQL dead code
-- [x] 00-03-PLAN.md — Implement RepositoryFactory + ServiceFactory thread-safe singletons
-- [x] 00-04-PLAN.md — Gap closure: implement /validate route + update stale REQUIREMENTS.md specs
+**Plans:** TBD
 
 ---
 
@@ -93,7 +87,12 @@ Plans:
 - ⚠️ **Pitfall 4 (nested commit):** Never call `session.commit()` inside a `with session.begin():` block — it commits the outermost transaction, not an inner savepoint.
 - ⚠️ **Anti-Pattern 1:** Transaction management belongs in `MySQLRepositoryImpl`, NOT in `ProductService`. Each repository method is its own atomic unit — the service layer calls them sequentially without owning session state.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Read path: MySQLRepositoryImpl read methods + ProductService reads + dashboard route (Wave 1)
+- [ ] 01-02-PLAN.md — Write path: MySQLRepositoryImpl write methods + ProductService writes + product_form.html (Wave 1)
+- [ ] 01-03-PLAN.md — CRUD routes: routes/products.py full CRUD + products.html Actions column (Wave 2)
 
 ---
 
@@ -247,7 +246,7 @@ Plans:
 
 | Phase | Requirements | Plans Complete | Status | Completed |
 |-------|-------------|----------------|--------|-----------|
-| 0. Foundation & Blockers | 4/4 | Complete   | 2026-04-02 | - |
+| 0. Foundation & Blockers | 8 (FOUND-01–08) | 0/TBD | Not started | - |
 | 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 0/TBD | Not started | - |
 | 2. MySQL DDL Features | 16 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02) | 0/TBD | Not started | - |
 | 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
