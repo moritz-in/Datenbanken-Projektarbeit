@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="mb-3">
+  {% if mode == "edit" %}Produkt bearbeiten{% else %}Neues Produkt{% endif %}
+</h1>
+
+<form method="post"
+      action="{% if mode == 'edit' %}{{ url_for('products.edit_product', product_id=product_id) }}{% else %}{{ url_for('products.create_product') }}{% endif %}">
+
+  <div class="mb-3">
+    <label class="form-label">Name <span class="text-danger">*</span></label>
+    <input type="text" name="name" class="form-control" required
+           value="{{ form_data.name or '' }}">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">SKU</label>
+    <input type="text" name="sku" class="form-control"
+           {% if mode == 'edit' %}readonly{% endif %}
+           value="{{ form_data.sku or '' }}">
+    {% if mode == 'edit' %}
+      <div class="form-text text-muted">SKU kann nach der Erstellung nicht geändert werden.</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Preis (EUR) <span class="text-danger">*</span></label>
+    <input type="number" name="price" class="form-control" step="0.01" min="0" required
+           value="{{ form_data.price or '' }}">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Marke <span class="text-danger">*</span></label>
+    <select name="brand_id" class="form-select" required>
+      <option value="">-- Marke wählen --</option>
+      {% for b in brands %}
+        <option value="{{ b.id }}"
+          {% if form_data.brand_id and form_data.brand_id|int == b.id %}selected{% endif %}>
+          {{ b.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Kategorie <span class="text-danger">*</span></label>
+    <select name="category_id" class="form-select" required>
+      <option value="">-- Kategorie wählen --</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}"
+          {% if form_data.category_id and form_data.category_id|int == c.id %}selected{% endif %}>
+          {{ c.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Tags</label>
+    <input type="text" name="tags_str" class="form-control" placeholder="tag1, tag2, tag3"
+           value="{{ form_data.tags_str or '' }}">
+    <div class="form-text text-muted">Kommagetrennte Tag-Namen</div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      {% if mode == 'edit' %}Speichern{% else %}Anlegen{% endif %}
+    </button>
+    <a href="{{ url_for('products.products') }}" class="btn btn-outline-secondary">Abbrechen</a>
+  </div>
+
+</form>
+
+{% endblock %}

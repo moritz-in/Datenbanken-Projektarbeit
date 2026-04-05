@@ -28,6 +28,130 @@ class ProductService:
         self.mysql_repo = mysql_repo
         self.qdrant_repo = qdrant_repo
 
+    # ------------------------------------------------------------------
+    # Write methods (Plan 02)
+    # ------------------------------------------------------------------
+
+    def get_product_by_id(self, product_id: int) -> dict | None:
+        """
+        Get a single product by ID with brand, category, and tags.
+
+        Args:
+            product_id: Product primary key
+
+        Returns:
+            dict with product fields (incl. tags_str) or None if not found
+        """
+        return self.mysql_repo.get_product_by_id(product_id)
+
+    def get_brands(self) -> list[dict]:
+        """Get all brands ordered by name."""
+        return self.mysql_repo.get_brands()
+
+    def get_categories(self) -> list[dict]:
+        """Get all categories ordered by name."""
+        return self.mysql_repo.get_categories()
+
+    def create_product_with_relations(
+        self,
+        name: str,
+        sku: str | None,
+        price: float,
+        brand_id: int,
+        category_id: int,
+        tags_str: str,
+    ) -> dict:
+        """
+        Create a new product resolving tag names to IDs.
+
+        Transaction ownership is in the repository; this method assembles data.
+
+        Args:
+            name: Product name
+            sku: Stock-keeping unit (optional)
+            price: Product price
+            brand_id: Brand FK
+            category_id: Category FK
+            tags_str: Comma-separated tag names
+
+        Returns:
+            dict with product_id of newly created product
+
+        Raises:
+            sqlalchemy.exc.IntegrityError: On duplicate SKU or FK violation
+        """
+        tag_ids = self._resolve_tag_ids(tags_str)
+        data = {
+            "name": name.strip(),
+            "sku": sku.strip() if sku and sku.strip() else None,
+            "price": float(price),
+            "brand_id": int(brand_id),
+            "category_id": int(category_id),
+            "tag_ids": tag_ids,
+        }
+        return self.mysql_repo.create_product(data)
+
+    def update_product(
+        self,
+        product_id: int,
+        name: str,
+        price: float,
+        brand_id: int,
+        category_id: int,
+        tags_str: str,
+    ) -> dict:
+        """
+        Update an existing product (SKU is never changed).
+
+        Args:
+            product_id: Product primary key
+            name: New product name
+            price: New price
+            brand_id: New brand FK
+            category_id: New category FK
+            tags_str: Comma-separated tag names (replaces existing tags)
+
+        Returns:
+            dict with product_id
+        """
+        tag_ids = self._resolve_tag_ids(tags_str)
+        data = {
+            "name": name.strip(),
+            "price": float(price),
+            "brand_id": int(brand_id),
+            "category_id": int(category_id),
+            "tag_ids": tag_ids,
+        }
+        return self.mysql_repo.update_product(product_id, data)
+
+    def delete_product(self, product_id: int) -> None:
+        """
+        Delete a product and its tag associations.
+
+        Args:
+            product_id: Product primary key
+        """
+        self.mysql_repo.delete_product(product_id)
+
+    def _resolve_tag_ids(self, tags_str: str) -> list[int]:
+        """
+        Resolve comma-separated tag names to tag IDs.
+
+        Tags not found in the database are silently ignored (no auto-create).
+
+        Args:
+            tags_str: Comma-separated tag names, e.g. "sale, new, featured"
+
+        Returns:
+            List of matched tag IDs
+        """
+        if not tags_str or not tags_str.strip():
+            return []
+        names = [t.strip().lower() for t in tags_str.split(",") if t.strip()]
+        existing_tags = self.mysql_repo.get_tags()  # [{"id": N, "name": "..."}]
+        existing_map = {t["name"].lower(): t["id"] for t in existing_tags}
+        return [existing_map[n] for n in names if n in existing_map]
+
     def list_products_joined(self, page: int = 1, page_size: int = 20) -> dict:
         """
         Get paginated products with brand, category, and tags.
@@ -39,7 +163,7 @@ class ProductService:
         Returns:
             Dictionary with 'items' (list of products) and 'total' (total count)
         """
-        raise NotImplementedError("TODO: implement product listing.")
+        return self.mysql_repo.get_products_with_joins(page, page_size)
 
     def get_dashboard_data(self) -> dict:
         """
@@ -50,7 +174,17 @@ class ProductService:
         Returns:
             Dictionary with 'mysql_counts', 'qdrant_counts', 'last_runs'
         """
-        raise NotImplementedError("TODO: implement dashboard data aggregation.")
+        stats = self.mysql_repo.get_dashboard_stats()
+        last_runs = self.mysql_repo.get_last_runs(limit=5)
+        return {
+            "mysql_counts": stats.get("mysql_counts", {}),
+            "qdrant_counts": {
+                "indexed": 0,
+                "last_indexed_at": "-",
+                "embedding_model": "-",
+            },
+            "last_runs": last_runs,
+        }
 
     def get_audit_log(self, page: int = 1, page_size: int = 10) -> dict:
         """
@@ -63,7 +197,7 @@ class ProductService:
         Returns:
             Dictionary with 'items' (list of audit entries) and 'total' (total count)
         """
-        raise NotImplementedError("TODO: implement audit log retrieval.")
+        return self.mysql_repo.get_audit_entries(page, page_size)
 
     def get_last_runs(self, limit: int = 10) -> list[dict]:
         """
@@ -75,7 +209,7 @@ class ProductService:
         Returns:
             List of run log dictionaries
         """
-        raise NotImplementedError("TODO: implement last runs retrieval.")
+        return self.mysql_repo.get_last_runs(limit)
 
     def execute_sql_query(self, query: str) -> list[dict]:
         """
@@ -93,7 +227,7 @@ class ProductService:
             ValueError: If query is not SELECT or contains forbidden keywords
             Exception: On SQL execution errors
         """
-        raise NotImplementedError("TODO: implement SQL execution.")
+        return self.mysql_repo.execute_raw_query(query)
 
     def validate_mysql(self) -> dict:
         """
