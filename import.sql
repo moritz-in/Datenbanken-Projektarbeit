@@ -25,7 +25,7 @@ START TRANSACTION;
 
 -- Import Brands (5 Einträge)
 LOAD DATA INFILE '/csv/brands.csv'
-IGNORE INTO TABLE brand
+IGNORE INTO TABLE brands
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -34,7 +34,7 @@ IGNORE 1 LINES
 
 -- Import Categories (4 Einträge)
 LOAD DATA INFILE '/csv/categories.csv'
-INTO TABLE category
+INTO TABLE categories
 FIELDS TERMINATED BY ',' 
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -43,7 +43,7 @@ IGNORE 1 LINES
 
 -- Import Tags (5 Einträge)
 LOAD DATA INFILE '/csv/tags.csv'
-INTO TABLE tag
+INTO TABLE tags
 FIELDS TERMINATED BY ',' 
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -58,7 +58,7 @@ IGNORE 1 LINES
 -- START TRANSACTION;
 
 LOAD DATA INFILE '/csv/products_extended.csv'
-INTO TABLE product
+INTO TABLE products
 FIELDS TERMINATED BY ',' 
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
@@ -88,7 +88,7 @@ IGNORE 1 LINES
 -- START TRANSACTION;
 
 LOAD DATA INFILE '/csv/product_tags.csv'
-INTO TABLE product_tag
+INTO TABLE product_tags
 FIELDS TERMINATED BY ',' 
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
