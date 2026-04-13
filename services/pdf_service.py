@@ -10,6 +10,7 @@ from flask import current_app
 from sentence_transformers import SentenceTransformer
 
 from repositories import QdrantRepository
+from repositories.qdrant_repository import QdrantRepositoryImpl
 
 log = logging.getLogger(__name__)
 
@@ -37,8 +38,8 @@ class PDFService:
         self._embedding_model = embedding_model
 
     def _get_embedding_model(self) -> SentenceTransformer:
-        """Lazy-load embedding model"""
-        raise NotImplementedError("TODO: implement embedding model loading.")
+        """Return injected embedding model singleton — never lazy-load here."""
+        return self._embedding_model
 
     def embed_texts(self, texts: list[str]) -> list:
         """
@@ -48,9 +49,9 @@ class PDFService:
             texts: List of text strings
 
         Returns:
-            List of embedding vectors (numpy arrays)
+            List of embedding vectors (list[float])
         """
-        raise NotImplementedError("TODO: implement embedding generation.")
+        return self._get_embedding_model().encode(texts, show_progress_bar=False).tolist()
 
     def upload_pdf_to_qdrant(
         self, pdf_file, collection_name: str = COLLECTION_PDF, chunk_size: int = 300
@@ -69,7 +70,14 @@ class PDFService:
         Raises:
             Exception: On upload errors
         """
-        raise NotImplementedError("TODO: implement PDF upload.")
+        filename = getattr(pdf_file, 'filename', 'unknown.pdf')
+        chunks = QdrantRepositoryImpl.extract_pdf_chunks(pdf_file, chunk_size)
+        if not chunks:
+            return "Keine Textinhalte gefunden"
+        texts = [c['text'] for c in chunks]
+        embeddings = self.embed_texts(texts)
+        n = self.qdrant_repo.upload_pdf_chunks(collection_name, chunks, embeddings, filename)
+        return f"{n} Chunks indexiert"
 
     def upload_product_pdf(self, pdf_file, chunk_size: int = 300) -> str:
         """
@@ -85,7 +93,7 @@ class PDFService:
         Raises:
             Exception: On upload errors
         """
-        raise NotImplementedError("TODO: implement product PDF upload.")
+        return self.upload_pdf_to_qdrant(pdf_file, COLLECTION_PDF_PRODUCTS, chunk_size)
 
     def get_pdf_counts(self) -> dict:
         """
@@ -94,7 +102,7 @@ class PDFService:
         Returns:
             Dictionary with counts for teaching and product PDFs
         """
-        raise NotImplementedError("TODO: implement PDF counts.")
+        return self.qdrant_repo.get_pdf_counts(COLLECTION_PDF, COLLECTION_PDF_PRODUCTS)
 
     def list_uploaded_pdfs(
         self, collection_name: Optional[str] = None
@@ -108,7 +116,8 @@ class PDFService:
         Returns:
             Sorted list of unique PDF filenames
         """
-        raise NotImplementedError("TODO: implement PDF listing.")
+        coll = collection_name or COLLECTION_PDF
+        return self.qdrant_repo.list_uploaded_pdfs(coll)
 
     def list_teaching_pdfs(self) -> list[str]:
         """
@@ -117,7 +126,7 @@ class PDFService:
         Returns:
             Sorted list of teaching PDF filenames
         """
-        raise NotImplementedError("TODO: implement teaching PDF listing.")
+        return self.qdrant_repo.list_uploaded_pdfs(COLLECTION_PDF)
 
     def list_product_pdfs(self) -> list[str]:
         """
@@ -126,7 +135,7 @@ class PDFService:
         Returns:
             Sorted list of product PDF filenames
         """
-        raise NotImplementedError("TODO: implement product PDF listing.")
+        return self.qdrant_repo.list_uploaded_pdfs(COLLECTION_PDF_PRODUCTS)
 
     def ensure_collections(self) -> None:
         """
@@ -134,7 +143,8 @@ class PDFService:
 
         Creates the collections if they don't exist yet.
         """
-        raise NotImplementedError("TODO: implement collection creation.")
+        self.qdrant_repo.ensure_collection(COLLECTION_PDF, 384)
+        self.qdrant_repo.ensure_collection(COLLECTION_PDF_PRODUCTS, 384)
 
     def get_collection_stats(self, collection_name: Optional[str] = None) -> dict:
         """
@@ -146,4 +156,5 @@ class PDFService:
         Returns:
             Dictionary with collection statistics
         """
-        raise NotImplementedError("TODO: implement collection stats.")
+        collection = collection_name or COLLECTION_PDF
+        return {'collection': collection, 'count': self.qdrant_repo.count(collection)}
