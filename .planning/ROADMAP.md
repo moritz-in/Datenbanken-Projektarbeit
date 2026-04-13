@@ -137,7 +137,12 @@ Plans:
 - ⚠️ **Trigger type:** Use `AFTER UPDATE` (not `BEFORE UPDATE`) — `BEFORE` triggers cannot see `NEW` values for logging purposes.
 - ⚠️ **Index rename:** The original `schema.sql` may have index DDL on singular table `product` — ensure index DDL references plural `products` table after Phase 0 rename.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — AFTER UPDATE trigger DDL + /audit route (Wave 1)
+- [ ] 02-02-PLAN.md — import_product() stored procedure + /validate/procedure route (Wave 1)
+- [ ] 02-03-PLAN.md — B-Tree index EXPLAIN documentation + index status on /validate (Wave 1)
 
 ---
 
