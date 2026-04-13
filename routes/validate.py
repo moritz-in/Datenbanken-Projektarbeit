@@ -16,7 +16,21 @@ def validate():
         flash("MySQL engine nicht initialisiert — MYSQL_URL fehlt?", "danger")
         return redirect(url_for("dashboard.dashboard"))
     report = validation.validate_mysql(db.mysql_engine)
-    return render_template("validation_result.html", report=report)
+
+    # Fetch B-Tree index status for display (IDX-04 demonstration)
+    indexes = []
+    try:
+        svc = ServiceFactory.get_product_service()
+        indexes = svc.execute_sql_query(
+            "SELECT index_name, column_name, non_unique, index_type "
+            "FROM information_schema.statistics "
+            "WHERE table_schema = 'projectdb' AND table_name = 'products' "
+            "ORDER BY index_name, seq_in_index"
+        )
+    except Exception:
+        pass  # Non-blocking — schema validation still works if index query fails
+
+    return render_template("validation_result.html", report=report, indexes=indexes)
 
 
 @bp.route("/validate/procedure", methods=["GET", "POST"])

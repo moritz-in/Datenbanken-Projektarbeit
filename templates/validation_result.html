@@ -31,4 +31,38 @@
   </div>
   {% endfor %}
 </div>
+
+{% if indexes %}
+<div class="card mt-4">
+  <div class="card-header">
+    <h5 class="mb-0">B-Tree Indizes auf <code>products</code></h5>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-striped mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Index-Name</th>
+          <th>Spalte</th>
+          <th>Typ</th>
+          <th>Unique</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for idx in indexes %}
+        <tr>
+          <td><code>{{ idx.index_name }}</code></td>
+          <td><code>{{ idx.column_name }}</code></td>
+          <td><span class="badge bg-info text-dark">{{ idx.index_type }}</span></td>
+          <td>{% if idx.non_unique == 0 %}<span class="badge bg-success">Unique</span>{% else %}<span class="badge bg-secondary">Non-Unique</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="text-muted mt-2 small">
+  Quelle: <code>information_schema.statistics</code> — Alle Indizes sind B-Tree-Typ (InnoDB Standard).
+  Vollständige Analyse: <a href="/docs/INDEX_ANALYSIS.md" target="_blank">INDEX_ANALYSIS.md</a>
+</p>
+{% endif %}
 {% endblock %}
