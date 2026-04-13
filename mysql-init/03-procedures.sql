@@ -14,16 +14,16 @@ DROP PROCEDURE IF EXISTS import_product;
 DELIMITER $$
 
 CREATE PROCEDURE import_product(
-    IN  p_name          VARCHAR(500),
-    IN  p_description   TEXT,
-    IN  p_brand_name    VARCHAR(100),
-    IN  p_category_name VARCHAR(100),
+    IN  p_name          VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    IN  p_description   TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    IN  p_brand_name    VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    IN  p_category_name VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
     IN  p_price         DECIMAL(10,2),
-    IN  p_sku           VARCHAR(100),
-    IN  p_load_class    VARCHAR(20),
-    IN  p_application   VARCHAR(20),
+    IN  p_sku           VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    IN  p_load_class    VARCHAR(20)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+    IN  p_application   VARCHAR(20)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
     OUT p_result_code   INT,
-    OUT p_result_message VARCHAR(500)
+    OUT p_result_message VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 )
 proc_label: BEGIN
 
@@ -80,6 +80,12 @@ proc_label: BEGIN
     IF @brand_id IS NULL THEN
         -- Fallback: erste Brand verwenden
         SELECT id INTO @brand_id FROM brands ORDER BY id LIMIT 1;
+    END IF;
+
+    IF @brand_id IS NULL THEN
+        SET p_result_code    = 2;
+        SET p_result_message = 'Keine Brand vorhanden – bitte zuerst eine Brand anlegen';
+        LEAVE proc_label;
     END IF;
 
     -- -----------------------------------------------------------------------

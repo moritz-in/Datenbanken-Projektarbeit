@@ -12,10 +12,15 @@ bp = Blueprint("validate", __name__)
 @bp.route("/validate", methods=["GET", "POST"])
 def validate():
     """Run validate_mysql() against the live MySQL engine and render results."""
-    if db.mysql_engine is None:
+    # Prefer db.mysql_engine; fall back to engine bound in session factory
+    # (older container images set only mysql_session_factory, not mysql_engine)
+    engine = db.mysql_engine
+    if engine is None and db.mysql_session_factory is not None:
+        engine = db.mysql_session_factory.kw.get("bind")
+    if engine is None:
         flash("MySQL engine nicht initialisiert — MYSQL_URL fehlt?", "danger")
         return redirect(url_for("dashboard.dashboard"))
-    report = validation.validate_mysql(db.mysql_engine)
+    report = validation.validate_mysql(engine)
 
     # Fetch B-Tree index status for display (IDX-04 demonstration)
     indexes = []
@@ -24,9 +29,11 @@ def validate():
         indexes = svc.execute_sql_query(
             "SELECT index_name, column_name, non_unique, index_type "
             "FROM information_schema.statistics "
-            "WHERE table_schema = 'projectdb' AND table_name = 'products' "
+            "WHERE table_schema = DATABASE() AND table_name = 'products' "
             "ORDER BY index_name, seq_in_index"
         )
+        # information_schema returns uppercase column names — normalise to lowercase
+        indexes = [{k.lower(): v for k, v in row.items()} for row in indexes]
     except Exception:
         pass  # Non-blocking — schema validation still works if index query fails
 

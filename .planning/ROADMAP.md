@@ -251,9 +251,9 @@ Plans:
 
 | Phase | Requirements | Plans Complete | Status | Completed |
 |-------|-------------|----------------|--------|-----------|
-| 0. Foundation & Blockers | 8 (FOUND-01–08) | 0/TBD | Not started | - |
-| 1. MySQL CRUD & Transaktionen | 3/3 | Complete   | 2026-04-05 | - |
-| 2. MySQL DDL Features | 3/3 | Complete   | 2026-04-13 | - |
+| 0. Foundation & Blockers | 8 (FOUND-01–08) | 3/3 | Complete | 2026-04-02 |
+| 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 3/3 | Complete | 2026-04-05 |
+| 2. MySQL DDL Features | 13 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02–03) | 3/3 | Complete | 2026-04-13 |
 | 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
 | 4. Neo4j Graph & RAG | 7 (GRAPH-01–07) | 0/TBD | Not started | - |
 | 5. Polish & Dokumentation | 1 (DOC-01) | 0/TBD | Not started | - |

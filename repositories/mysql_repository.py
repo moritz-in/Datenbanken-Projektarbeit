@@ -648,6 +648,11 @@ class MySQLRepositoryImpl(MySQLRepository):
                     pass
                 cursor.execute("SELECT @rc AS result_code, @rm AS result_message")
                 row = cursor.fetchone()
-                return {"result_code": int(row[0] or 0), "result_message": str(row[1] or "")}
+                result = {"result_code": int(row[0] or 0), "result_message": str(row[1] or "")}
+                # Commit only on success (result_code=0) — errors and validation failures
+                # must not persist partial state.
+                if result["result_code"] == 0:
+                    session.commit()
+                return result
             finally:
                 cursor.close()
