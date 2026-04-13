@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-05T19:27:39.923Z"
+status: executing
+last_updated: "2026-04-13T10:00:45.477Z"
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 10
+  completed_plans: 10
   percent: 100
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
-**Last updated:** 2026-04-05
-**Session:** Phase 1 Plan 03 execution — CRUD routes (routes/products.py) + Actions column (products.html)
+**Last updated:** 2026-04-13
+**Session:** Phase 2 Plan 02 execution — import_product() stored procedure DDL + /validate/procedure route
 
 ---
 
@@ -31,9 +31,9 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 1 — MySQL CRUD & Transaktionen (A2) — **Complete**
-**Active Plan:** Plan 03 complete — Phase 1 DONE
-**Status:** Ready to plan
+**Active Phase:** Phase 2 — MySQL DDL Features (A3, A4, A5) — **In Progress**
+**Active Plan:** Plan 02 complete (import_product() stored procedure + /validate/procedure UI)
+**Status:** In progress — Plan 03 (indexes) remaining
 
 ```
 Progress: [██████████] 100%
@@ -49,7 +49,7 @@ Progress: [██████████] 100%
 |-------|------|-------------|--------|-----------|
 | 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Complete** | 2026-04-02 |
 | 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
-| 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | Pending | - |
+| 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **In Progress** | - |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
 | 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
 | 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
@@ -66,7 +66,7 @@ Progress: [██████████] 100%
 | Phases complete | 2 |
 | Phases in progress | 0 |
 | Requirements mapped | 50/50 |
-| Requirements complete | 17/50 (FOUND-01–08, TXN-01–08, ROUTE-01) |
+| Requirements complete | 26/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03) |
 | Plans created | 7 |
 | Plans complete | 7 |
 
@@ -75,6 +75,9 @@ Progress: [██████████] 100%
 | Phase 01-mysql-crud-transaktionen-a2 P02 | 3min | 2 tasks | 3 files |
 | Phase 01-mysql-crud-transaktionen-a2 P01 | 17m | 2 tasks | 5 files |
 | Phase 01-mysql-crud-transaktionen-a2 P03 | 9m | 2 tasks | 4 files |
+| Phase 02-mysql-ddl-features P01 | 2min | 2 tasks | 2 files |
+| Phase 02-mysql-ddl-features P02 | 3min | 2 tasks | 5 files |
+| Phase 02-mysql-ddl-features P03 | 3m | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -134,6 +137,18 @@ Progress: [██████████] 100%
 
 ### What Was Done This Session
 
+- Executed Phase 2 Plan 02: import_product() stored procedure DDL + repository/service/route/template wiring
+- Created mysql-init/03-procedures.sql with full import_product() stored procedure
+  - DELIMITER $$ wrapper, proc_label: BEGIN...END, DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  - Validation (result_code=2), duplicate SKU (result_code=1), brand fallback, category required
+  - INSERT products with NULLIF for optional fields, success result_code=0
+- MySQLRepository ABC: added call_import_product() abstractmethod
+- MySQLRepositoryImpl: implemented call_import_product() with raw pymysql cursor + cursor.nextset() loop (Pitfall 12)
+- ProductService: added import_product() method delegating to mysql_repo
+- routes/validate.py: added /validate/procedure GET+POST route with ServiceFactory
+- templates/validate_procedure.html: Bootstrap 5 form + color-coded result badge + A4 educational note
+- PROC-01, PROC-02, PROC-03, PROC-04, ROUTE-03 requirements satisfied
+
 - Executed Phase 1 Plan 01: MySQLRepositoryImpl read methods + ProductService read methods + dashboard/products routes
 - Added abstract methods to MySQLRepository ABC (get_brands, get_categories, get_tags, create_product, update_product, delete_product, get_product_by_id)
 - Implemented all read-path methods in MySQLRepositoryImpl (get_products_with_joins, get_dashboard_stats, get_last_runs, get_audit_entries, execute_raw_query, has_column, load_products_for_index, log_etl_run, get_brands, get_categories, get_tags)
@@ -157,17 +172,17 @@ Progress: [██████████] 100%
 
 ### What to Do Next
 
-1. Start Phase 2 — MySQL DDL Features (A3, A4, A5): triggers, stored procedures, indexes
-2. Phase 2 plans: triggers (TRG-01–03), stored procedures (PROC-01–04), indexes (IDX-01–06)
-3. Phase 2 requires Phase 1 complete — now done
+1. Execute Phase 2 Plan 03 — MySQL indexes (IDX-01–06, DOC-02)
+2. Phase 2 Plan 03 is the last plan in Phase 2
 
 ### Files Written This Session
 
-- `routes/products.py` — full CRUD routes implemented
-- `templates/products.html` — Actions column added
-- `repositories/mysql_repository.py` — write methods implemented (fix for Plan 02 stubs)
-- `docker-compose.override.yml` — templates/ bind-mount added
-- `.planning/phases/01-mysql-crud-transaktionen-a2/01-03-SUMMARY.md`
+- `mysql-init/03-procedures.sql` — import_product() stored procedure DDL
+- `repositories/mysql_repository.py` — call_import_product() abstractmethod + implementation
+- `services/product_service.py` — import_product() service method
+- `routes/validate.py` — /validate/procedure route added
+- `templates/validate_procedure.html` — procedure test form + result display
+- `.planning/phases/02-mysql-ddl-features/02-02-SUMMARY.md`
 
 ---
 

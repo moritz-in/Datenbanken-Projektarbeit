@@ -35,19 +35,19 @@
 
 ### A4 — Stored Procedure
 
-- [ ] **PROC-01**: MySQL Stored Procedure `import_product()` erstellt — Produktimport mit Dublettenprüfung via SKU
-- [ ] **PROC-02**: Procedure validiert Pflichtfelder (name, price, category) und gibt OUT-Parameter zurück (status, message)
-- [ ] **PROC-03**: Procedure-DDL in `schema.sql` oder separatem `procedures.sql` eingespielt beim DB-Start
-- [ ] **PROC-04**: `ProductService` enthält Methode um `CALL import_product(...)` aufzurufen
+- [x] **PROC-01**: MySQL Stored Procedure `import_product()` erstellt — Produktimport mit Dublettenprüfung via SKU
+- [x] **PROC-02**: Procedure validiert Pflichtfelder (name, price, category) und gibt OUT-Parameter zurück (status, message)
+- [x] **PROC-03**: Procedure-DDL in `schema.sql` oder separatem `procedures.sql` eingespielt beim DB-Start
+- [x] **PROC-04**: `ProductService` enthält Methode um `CALL import_product(...)` aufzurufen
 
 ### A5 — Indizes & B-Baum
 
-- [ ] **IDX-01**: B-Tree-Index auf `products.name` erstellt
-- [ ] **IDX-02**: B-Tree-Index auf `products.category_id` erstellt
-- [ ] **IDX-03**: B-Tree-Index auf `products.brand_id` erstellt
-- [ ] **IDX-04**: Index-DDL in `schema.sql` definiert
-- [ ] **IDX-05**: `EXPLAIN`-Ausgaben für 3 Queries dokumentiert — Exact-Match-Query, Range-Scan-Query, JOIN-Query — jeweils vor und nach Indexanlage
-- [ ] **IDX-06**: Markdown-Dokument erklärt warum MySQL B-Bäume verwendet und analysiert die EXPLAIN-Ergebnisse
+- [x] **IDX-01**: B-Tree-Index auf `products.name` erstellt
+- [x] **IDX-02**: B-Tree-Index auf `products.category_id` erstellt
+- [x] **IDX-03**: B-Tree-Index auf `products.brand_id` erstellt
+- [x] **IDX-04**: Index-DDL in `schema.sql` definiert
+- [x] **IDX-05**: `EXPLAIN`-Ausgaben für 3 Queries dokumentiert — Exact-Match-Query, Range-Scan-Query, JOIN-Query — jeweils vor und nach Indexanlage
+- [x] **IDX-06**: Markdown-Dokument erklärt warum MySQL B-Bäume verwendet und analysiert die EXPLAIN-Ergebnisse
 
 ### A6 — Vektor-DB & semantische Suche
 
@@ -74,13 +74,13 @@
 
 - [x] **ROUTE-01**: `dashboard.py` implementiert — Produktanzahl, letzter ETL-Lauf, System-Status aller 3 DBs
 - [ ] **ROUTE-02**: `audit.py` implementiert — ETL-Lauf-Log aus `etl_run_log` angezeigt
-- [ ] **ROUTE-03**: `validate.py` implementiert — Schema-Validierung (erwartet vs. tatsächlich) mit Ergebnis-Anzeige
+- [x] **ROUTE-03**: `validate.py` implementiert — Schema-Validierung (erwartet vs. tatsächlich) mit Ergebnis-Anzeige
 - [ ] **ROUTE-04**: `pdf.py` implementiert — PDF-Upload → Text-Extraktion → Qdrant-Indexierung
 
 ### Dokumentation
 
 - [ ] **DOC-01**: `COMPARISON.md` erstellt — konzeptuelle Gegenüberstellung SQL vs. Vektor-Suche vs. Graph+RAG mit konkreten Beispielen: 3 Queries × 3 Suchmethoden mit echten Produktkatalog-Ergebnissen
-- [ ] **DOC-02**: B-Baum-Analyse-Dokument mit EXPLAIN-Screenshots/Output (abgedeckt durch IDX-05/IDX-06)
+- [x] **DOC-02**: B-Baum-Analyse-Dokument mit EXPLAIN-Screenshots/Output (abgedeckt durch IDX-05/IDX-06)
 
 ## v2 Requirements
 
@@ -129,16 +129,16 @@ Wird nach Roadmap-Erstellung befüllt.
 | TRIG-01 | Phase 2 | Pending |
 | TRIG-02 | Phase 2 | Pending |
 | TRIG-03 | Phase 2 | Pending |
-| PROC-01 | Phase 2 | Pending |
-| PROC-02 | Phase 2 | Pending |
-| PROC-03 | Phase 2 | Pending |
-| PROC-04 | Phase 2 | Pending |
-| IDX-01 | Phase 2 | Pending |
-| IDX-02 | Phase 2 | Pending |
-| IDX-03 | Phase 2 | Pending |
-| IDX-04 | Phase 2 | Pending |
-| IDX-05 | Phase 2 | Pending |
-| IDX-06 | Phase 2 | Pending |
+| PROC-01 | Phase 2 | Complete |
+| PROC-02 | Phase 2 | Complete |
+| PROC-03 | Phase 2 | Complete |
+| PROC-04 | Phase 2 | Complete |
+| IDX-01 | Phase 2 | Complete |
+| IDX-02 | Phase 2 | Complete |
+| IDX-03 | Phase 2 | Complete |
+| IDX-04 | Phase 2 | Complete |
+| IDX-05 | Phase 2 | Complete |
+| IDX-06 | Phase 2 | Complete |
 | VECT-01 | Phase 3 | Pending |
 | VECT-02 | Phase 3 | Pending |
 | VECT-03 | Phase 3 | Pending |
@@ -156,10 +156,10 @@ Wird nach Roadmap-Erstellung befüllt.
 | GRAPH-07 | Phase 4 | Pending |
 | ROUTE-01 | Phase 1 | Complete |
 | ROUTE-02 | Phase 2 | Pending |
-| ROUTE-03 | Phase 2 | Pending |
+| ROUTE-03 | Phase 2 | Complete |
 | ROUTE-04 | Phase 3 | Pending |
 | DOC-01 | Phase 5 | Pending |
-| DOC-02 | Phase 2 | Pending |
+| DOC-02 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 50 total
