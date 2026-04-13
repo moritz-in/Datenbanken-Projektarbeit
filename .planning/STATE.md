@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-last_updated: "2026-04-13T10:09:28.208Z"
+last_updated: "2026-04-13T16:38:57.990Z"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  completed_phases: 4
+  total_plans: 14
+  completed_plans: 14
   percent: 100
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
 **Last updated:** 2026-04-13
-**Session:** Phase 2 Plan 03 execution — B-Tree index analysis document + /validate B-Tree index display
+**Session:** Phase 3 execution complete — Qdrant Vektor-Suche (A6) all 4 plans done
 
 ---
 
@@ -31,14 +31,14 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 2 — MySQL DDL Features (A3, A4, A5) — **Complete**
-**Active Plan:** Plan 03 complete (B-Tree index analysis + /validate index display)
-**Status:** Ready to plan
+**Active Phase:** Phase 3 — Qdrant Vektor-Suche (A6) — **Complete**
+**Active Plan:** Plan 04 complete (SearchService vector search + unified /search route)
+**Status:** Ready for Phase 4 (Neo4j Graph & RAG)
 
 ```
 Progress: [██████████] 100%
-           [COMPLETE | COMPLETE |         |         |         |        ]
-           [ 100%    | 100%    |   0%    |   0%    |   0%    |   0%  ]
+           [COMPLETE | COMPLETE | COMPLETE |         |         |        ]
+           [ 100%    | 100%    | 100%     |   0%    |   0%    |   0%  ]
 ```
 
 ---
@@ -50,7 +50,7 @@ Progress: [██████████] 100%
 | 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Complete** | 2026-04-02 |
 | 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
 | 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **Complete** | 2026-04-13 |
-| 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
+| 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | **Complete** | 2026-04-13 |
 | 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
 | 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
 
@@ -66,9 +66,9 @@ Progress: [██████████] 100%
 | Phases complete | 2 |
 | Phases in progress | 0 |
 | Requirements mapped | 50/50 |
-| Requirements complete | 33/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02) |
-| Plans created | 7 |
-| Plans complete | 7 |
+| Requirements complete | 42/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02, VECT-01–08, ROUTE-04) |
+| Plans created | 14 |
+| Plans complete | 14 |
 
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
@@ -78,6 +78,10 @@ Progress: [██████████] 100%
 | Phase 02-mysql-ddl-features P01 | 2min | 2 tasks | 2 files |
 | Phase 02-mysql-ddl-features P02 | 3min | 2 tasks | 5 files |
 | Phase 02-mysql-ddl-features P03 | 3m | 2 tasks | 3 files |
+| Phase 03 P01 | 4min | 1 tasks | 1 files |
+| Phase 03 P02 | 6min | 2 tasks | 2 files |
+| Phase 03 P03 | 5min | 2 tasks | 2 files |
+| Phase 03 P04 | 4min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -103,6 +107,10 @@ Progress: [██████████] 100%
 | `DELIMITER $$` required for trigger DDL in MySQL init scripts | MySQL client uses `;` as delimiter by default — `BEGIN...END` body contains semicolons that would break parsing without `DELIMITER $$` |
 | NULL-safe comparison in trigger for nullable fields | Simple `OLD.x <> NEW.x` fails silently when either value is NULL; three-part OR check correctly detects all transition types |
 | `changed_by = 'web_ui'` hardcoded in trigger body | MySQL triggers have no access to Flask session context; hardcoded value is the correct approach |
+| `ensure_collection()` idempotent via `collection_exists()` before create | Re-creating an existing collection would destroy data; check-then-create is safe and cheap |
+| `build_index` Strategy C exclusively in Phase 3 | CONTEXT.md locked decision: delete+recreate before upsert; param kept for API compatibility |
+| `execute_sql_search` uses local import ServiceFactory | Avoids circular import: services/__init__.py already imports SearchService |
+| Phase 4 stubs preserved in SearchService | rag_search/pdf_rag_search/search_product_pdfs throw NotImplementedError; /search catches it → empty results (no 501) |
 
 ### Known Risks
 
@@ -140,59 +148,53 @@ Progress: [██████████] 100%
 
 ### What Was Done This Session
 
-- Executed Phase 2 Plan 03: B-Tree index analysis document + /validate index display
-- Created docs/INDEX_ANALYSIS.md with EXPLAIN analysis for 3 queries (exact-match, range, JOIN)
-- B-Tree theory documented: sorted order, O(log N) height, 16KB InnoDB pages, B+-tree structure
-- Extended routes/validate.py to query information_schema.statistics for live index status
-- Added B-Tree index table to templates/validation_result.html (non-blocking display)
-- IDX-01–06 and DOC-02 requirements satisfied; Phase 2 MySQL DDL Features COMPLETE
+- Executed Phase 3 Plan 01: QdrantRepositoryImpl core methods fully implemented
+  - ensure_collection (idempotent), delete_collection (404-safe), count (returns 0 if absent)
+  - upsert_points (ensure_collection first, wait=True, .tolist() guard), search (SearchParams), scroll (pagination)
+  - get_collection_info (returns dict with safe defaults), truncate_index, get_unique_sources
+  - PDF methods: extract_pdf_chunks (@staticmethod, pdfplumber), upload_pdf_chunks (uuid IDs), get_pdf_counts, list_uploaded_pdfs
+  - VECT-01, VECT-02, VECT-03, VECT-05 satisfied
 
-- Executed Phase 2 Plan 02: import_product() stored procedure DDL + repository/service/route/template wiring
-- Created mysql-init/03-procedures.sql with full import_product() stored procedure
-  - DELIMITER $$ wrapper, proc_label: BEGIN...END, DECLARE EXIT HANDLER FOR SQLEXCEPTION
-  - Validation (result_code=2), duplicate SKU (result_code=1), brand fallback, category required
-  - INSERT products with NULLIF for optional fields, success result_code=0
-- MySQLRepository ABC: added call_import_product() abstractmethod
-- MySQLRepositoryImpl: implemented call_import_product() with raw pymysql cursor + cursor.nextset() loop (Pitfall 12)
-- ProductService: added import_product() method delegating to mysql_repo
-- routes/validate.py: added /validate/procedure GET+POST route with ServiceFactory
-- templates/validate_procedure.html: Bootstrap 5 form + color-coded result badge + A4 educational note
-- PROC-01, PROC-02, PROC-03, PROC-04, ROUTE-03 requirements satisfied
+- Executed Phase 3 Plan 02: IndexService ETL pipeline + /index route
+  - product_to_document: structured labels, skip None/empty, never "None" in output
+  - build_index: Strategy C delete+recreate, batch embed, upsert, log_etl_run on success/error
+  - get_index_status, truncate_index, get_collection_info implemented
+  - GET /index, POST /index (PRG), POST /truncate-index (PRG) all working
+  - VECT-06, VECT-07, VECT-08 satisfied
 
-- Executed Phase 1 Plan 01: MySQLRepositoryImpl read methods + ProductService read methods + dashboard/products routes
-- Added abstract methods to MySQLRepository ABC (get_brands, get_categories, get_tags, create_product, update_product, delete_product, get_product_by_id)
-- Implemented all read-path methods in MySQLRepositoryImpl (get_products_with_joins, get_dashboard_stats, get_last_runs, get_audit_entries, execute_raw_query, has_column, load_products_for_index, log_etl_run, get_brands, get_categories, get_tags)
-- Implemented ProductService delegation methods (list_products_joined, get_dashboard_data, get_audit_log, get_last_runs, execute_sql_query)
-- Implemented GET / dashboard route and GET /products product list route
-- Fixed bug: products table has no currency column → use 'EUR' AS currency literal
-- Created docker-compose.override.yml to bind-mount source dirs for live code reload
+- Executed Phase 3 Plan 03: PDFService + PDF routes
+  - PDFService: upload_pdf_to_qdrant, upload_product_pdf, get_pdf_counts, list_*_pdfs, ensure_collections
+  - GET /pdf-upload, POST /upload-teaching-pdf, POST /upload-product-pdf, GET /api/pdf-stats
+  - VECT-04, ROUTE-04 satisfied
 
-- Executed Phase 1 Plan 02: MySQLRepositoryImpl write methods (create/update/delete/get_by_id + get_brands/categories/tags)
-- Implemented ProductService write methods (create_product_with_relations, update_product, delete_product, _resolve_tag_ids)
-- Added ProductService delegation methods (get_product_by_id, get_brands, get_categories)
-- Created templates/product_form.html shared Bootstrap 5 create/edit form
+- Executed Phase 3 Plan 04: SearchService + unified /search route
+  - vector_search: embed query, search Qdrant, map ScoredPoint→dict
+  - execute_sql_search: local import ServiceFactory → delegates to ProductService
+  - _coerce_int/_coerce_ints helper methods implemented
+  - Phase 4 stubs preserved (rag_search, pdf_rag_search, search_product_pdfs, _generate_llm_answer)
+  - GET/POST /search: 6-type dispatch, NotImplementedError caught for Phase 4 tabs (no 501)
+  - VECT-07, VECT-08 (via search route) satisfied; Phase 3 COMPLETE
 
-- Executed Phase 1 Plan 03: CRUD routes in routes/products.py + Actions column in products.html
-- Implemented new_product, create_product, edit_product, update_product, delete_product route handlers
-- Added Aktionen column with Edit/Delete buttons to products.html
-- Auto-fixed: Plan 02 stubs not implemented → implemented create/update/delete/get_product_by_id in mysql_repository.py
-- Auto-fixed: Wrong column name (p.product_id → p.id) and currency column not in products table
-- Auto-fixed: templates/ bind-mount added to docker-compose.override.yml
-- Phase 1 MySQL CRUD & Transaktionen COMPLETE
+- Deviation found: docker-compose.override.yml bind mounts not active → container recreated with --force-recreate to pick up all file changes
 
 ### What to Do Next
 
-1. Start Phase 3 — Qdrant Vektor-Suche (A6): vector embedding, search routes (VECT-01–08, ROUTE-04)
-2. Phase 2 ALL plans complete — IDX-01–06, DOC-02 satisfied
+1. Start Phase 4 — Neo4j Graph & RAG (A7): graph sync, RAG search (GRAPH-01–07)
+2. Phase 3 ALL plans complete — VECT-01–08, ROUTE-04 satisfied
 
 ### Files Written This Session
 
-- `mysql-init/03-procedures.sql` — import_product() stored procedure DDL
-- `repositories/mysql_repository.py` — call_import_product() abstractmethod + implementation
-- `services/product_service.py` — import_product() service method
-- `routes/validate.py` — /validate/procedure route added
-- `templates/validate_procedure.html` — procedure test form + result display
-- `.planning/phases/02-mysql-ddl-features/02-02-SUMMARY.md`
+- `repositories/qdrant_repository.py` — QdrantRepositoryImpl fully implemented (all stubs replaced)
+- `services/index_service.py` — IndexService ETL pipeline fully implemented
+- `services/pdf_service.py` — PDFService fully implemented
+- `services/search_service.py` — SearchService Phase 3 methods implemented
+- `routes/index.py` — /index GET/POST + /truncate-index POST
+- `routes/pdf.py` — /pdf-upload GET + upload routes POST + /api/pdf-stats GET
+- `routes/search.py` — /search unified handler (6 types)
+- `.planning/phases/03-qdrant-vektor-suche-a6/03-01-SUMMARY.md`
+- `.planning/phases/03-qdrant-vektor-suche-a6/03-02-SUMMARY.md`
+- `.planning/phases/03-qdrant-vektor-suche-a6/03-03-SUMMARY.md`
+- `.planning/phases/03-qdrant-vektor-suche-a6/03-04-SUMMARY.md`
 
 ---
 

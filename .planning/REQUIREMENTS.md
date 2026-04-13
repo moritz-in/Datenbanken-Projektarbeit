@@ -51,14 +51,14 @@
 
 ### A6 — Vektor-DB & semantische Suche
 
-- [ ] **VECT-01**: `QdrantRepositoryImpl.create_collection()` implementiert — nutzt `delete_collection` + `create_collection` (kein deprecated `recreate_collection`)
-- [ ] **VECT-02**: `QdrantRepositoryImpl.upsert_points()` implementiert — mit `ensure_collection()` vor Upsert und `wait=True`
-- [ ] **VECT-03**: `QdrantRepositoryImpl.search()` implementiert — gibt Trefferliste mit Scores zurück
-- [ ] **VECT-04**: `QdrantRepositoryImpl.extract_pdf_chunks()` und `upload_pdf_chunks()` implementiert
-- [ ] **VECT-05**: `IndexService` implementiert — Produkte laden → embedden (numpy `.tolist()`) → in Qdrant upserten + ETL-Lauf in `etl_run_log` loggen
-- [ ] **VECT-06**: `SearchService.vector_search()` implementiert — Query embedden → Qdrant-Suche → Ergebnisse zurückgeben
-- [ ] **VECT-07**: Route `search.py` implementiert — semantische Suche und klassische SQL-Volltextsuche nebeneinander angezeigt
-- [ ] **VECT-08**: Route `index.py` implementiert — Index-Build-Formular mit Fortschrittsanzeige
+- [x] **VECT-01**: `QdrantRepositoryImpl.create_collection()` implementiert — nutzt `delete_collection` + `create_collection` (kein deprecated `recreate_collection`)
+- [x] **VECT-02**: `QdrantRepositoryImpl.upsert_points()` implementiert — mit `ensure_collection()` vor Upsert und `wait=True`
+- [x] **VECT-03**: `QdrantRepositoryImpl.search()` implementiert — gibt Trefferliste mit Scores zurück
+- [x] **VECT-04**: `QdrantRepositoryImpl.extract_pdf_chunks()` und `upload_pdf_chunks()` implementiert
+- [x] **VECT-05**: `IndexService` implementiert — Produkte laden → embedden (numpy `.tolist()`) → in Qdrant upserten + ETL-Lauf in `etl_run_log` loggen
+- [x] **VECT-06**: `SearchService.vector_search()` implementiert — Query embedden → Qdrant-Suche → Ergebnisse zurückgeben
+- [x] **VECT-07**: Route `search.py` implementiert — semantische Suche und klassische SQL-Volltextsuche nebeneinander angezeigt
+- [x] **VECT-08**: Route `index.py` implementiert — Index-Build-Formular mit Fortschrittsanzeige
 
 ### A7 — Graph-DB & LLM/RAG
 
@@ -75,7 +75,7 @@
 - [x] **ROUTE-01**: `dashboard.py` implementiert — Produktanzahl, letzter ETL-Lauf, System-Status aller 3 DBs
 - [x] **ROUTE-02**: `audit.py` implementiert — ETL-Lauf-Log aus `etl_run_log` angezeigt
 - [x] **ROUTE-03**: `validate.py` implementiert — Schema-Validierung (erwartet vs. tatsächlich) mit Ergebnis-Anzeige
-- [ ] **ROUTE-04**: `pdf.py` implementiert — PDF-Upload → Text-Extraktion → Qdrant-Indexierung
+- [x] **ROUTE-04**: `pdf.py` implementiert — PDF-Upload → Text-Extraktion → Qdrant-Indexierung
 
 ### Dokumentation
 
@@ -139,14 +139,14 @@ Wird nach Roadmap-Erstellung befüllt.
 | IDX-04 | Phase 2 | Complete |
 | IDX-05 | Phase 2 | Complete |
 | IDX-06 | Phase 2 | Complete |
-| VECT-01 | Phase 3 | Pending |
-| VECT-02 | Phase 3 | Pending |
-| VECT-03 | Phase 3 | Pending |
-| VECT-04 | Phase 3 | Pending |
-| VECT-05 | Phase 3 | Pending |
-| VECT-06 | Phase 3 | Pending |
-| VECT-07 | Phase 3 | Pending |
-| VECT-08 | Phase 3 | Pending |
+| VECT-01 | Phase 3 | Complete |
+| VECT-02 | Phase 3 | Complete |
+| VECT-03 | Phase 3 | Complete |
+| VECT-04 | Phase 3 | Complete |
+| VECT-05 | Phase 3 | Complete |
+| VECT-06 | Phase 3 | Complete |
+| VECT-07 | Phase 3 | Complete |
+| VECT-08 | Phase 3 | Complete |
 | GRAPH-01 | Phase 4 | Pending |
 | GRAPH-02 | Phase 4 | Pending |
 | GRAPH-03 | Phase 4 | Pending |
@@ -157,7 +157,7 @@ Wird nach Roadmap-Erstellung befüllt.
 | ROUTE-01 | Phase 1 | Complete |
 | ROUTE-02 | Phase 2 | Complete |
 | ROUTE-03 | Phase 2 | Complete |
-| ROUTE-04 | Phase 3 | Pending |
+| ROUTE-04 | Phase 3 | Complete |
 | DOC-01 | Phase 5 | Pending |
 | DOC-02 | Phase 2 | Complete |
 

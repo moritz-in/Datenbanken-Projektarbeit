@@ -11,7 +11,7 @@
 - [x] **Phase 0 — Foundation & Blockers** — Schema fixes, factory singletons, NoOp repair, PostgreSQL dead-code removal (completed 2026-04-02)
 - [x] **Phase 1 — MySQL CRUD & Transaktionen (A2)** — Repository write path with explicit transactions, rollback demos, CRUD routes (completed 2026-04-05)
 - [x] **Phase 2 — MySQL DDL Features (A3, A4, A5)** — Trigger, Stored Procedure, B-Tree indexes, EXPLAIN analysis (completed 2026-04-13)
-- [ ] **Phase 3 — Qdrant Vektor-Suche (A6)** — Vector ETL, semantic search route, index build route, ETL logging
+- [x] **Phase 3 — Qdrant Vektor-Suche (A6)** — Vector ETL, semantic search route, index build route, ETL logging (completed 2026-04-13)
 - [ ] **Phase 4 — Neo4j Graph & RAG (A7)** — Graph population, RAG pipeline, LLM answer generation, RAG route
 - [ ] **Phase 5 — Polish & Dokumentation** — COMPARISON.md comparative analysis
 
@@ -179,7 +179,7 @@ Plans:
 - ⚠️ **`wait=True`:** Always pass `wait=True` to `client.upsert()`. Without it, a subsequent `count()` or `search()` may see 0 results even after a successful upsert.
 - ⚠️ **No `recreate_collection`:** `QdrantClient.recreate_collection()` was deprecated in v1.1.1 and removed. Use `delete_collection()` + `create_collection()` for full rebuilds (Strategy C).
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — QdrantRepositoryImpl core methods (ensure_collection, upsert, search, count, delete, scroll, get_collection_info) (Wave 1)
@@ -260,7 +260,7 @@ Plans:
 | 0. Foundation & Blockers | 8 (FOUND-01–08) | 3/3 | Complete | 2026-04-02 |
 | 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 3/3 | Complete | 2026-04-05 |
 | 2. MySQL DDL Features | 13 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02–03) | 3/3 | Complete | 2026-04-13 |
-| 3. Qdrant Vektor-Suche | 9 (VECT-01–08, ROUTE-04) | 0/TBD | Not started | - |
+| 3. Qdrant Vektor-Suche | 4/4 | Complete   | 2026-04-13 | - |
 | 4. Neo4j Graph & RAG | 7 (GRAPH-01–07) | 0/TBD | Not started | - |
 | 5. Polish & Dokumentation | 1 (DOC-01) | 0/TBD | Not started | - |
 
