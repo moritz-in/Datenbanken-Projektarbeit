@@ -40,12 +40,12 @@ class SearchService:
         self._llm_client = llm_client
 
     def _get_embedding_model(self) -> SentenceTransformer:
-        """Lazy-load embedding model"""
-        raise NotImplementedError("TODO: implement embedding model loading.")
+        """Return injected embedding model singleton — never lazy-load here."""
+        return self._embedding_model
 
     def _get_llm_client(self) -> OpenAI:
-        """Lazy-load OpenAI client"""
-        raise NotImplementedError("TODO: implement LLM client loading.")
+        """Return injected LLM client — may be None if no API key configured."""
+        return self._llm_client
 
     def embed_texts(self, texts: list[str]) -> list:
         """
@@ -55,9 +55,10 @@ class SearchService:
             texts: List of text strings
 
         Returns:
-            List of embedding vectors (numpy arrays)
+            List of embedding vectors (list[float])
         """
-        raise NotImplementedError("TODO: implement embedding generation.")
+        model = self._get_embedding_model()
+        return model.encode(texts, show_progress_bar=False).tolist()
 
     def vector_search(
         self, query: str, topk: int = 5, collection_name: Optional[str] = None
@@ -73,62 +74,52 @@ class SearchService:
         Returns:
             List of product dictionaries with scores
         """
-        raise NotImplementedError("TODO: implement vector search.")
+        coll = collection_name or current_app.config.get("QDRANT_COLLECTION", "products")
+        query_vector = self.embed_texts([query])[0]
+        hits = self.qdrant_repo.search(coll, query_vector, limit=topk, with_payload=True)
+        results = []
+        for h in hits:
+            payload = h.payload or {}
+            results.append({
+                'title': payload.get('title', ''),
+                'brand': payload.get('brand', ''),
+                'price': payload.get('price', 0),
+                'score': h.score,
+                'doc_preview': payload.get('doc_preview', ''),
+                'graph_source': None,  # enriched in Phase 4
+            })
+        return results
 
     def rag_search(
         self, strategy: str, query: str, topk: int = 5, use_graph_enrichment: bool = True
     ) -> dict:
         """
         Perform RAG (Retrieval-Augmented Generation) search with graph enrichment.
-
-        Args:
-            strategy: Search strategy (not used currently, for compatibility)
-            query: Search query
-            topk: Number of results to retrieve
-            use_graph_enrichment: Whether to enrich results with Neo4j data
-
-        Returns:
-            Dictionary with 'query', 'answer', 'hits'
+        Phase 4 — not yet implemented.
         """
-        raise NotImplementedError("TODO: implement RAG search.")
+        raise NotImplementedError("TODO: implement RAG search (Phase 4).")
 
     def pdf_rag_search(
         self, query: str, topk: int = 5, pdf_collection: str = "pdf_skripte"
     ) -> Optional[dict]:
         """
         Search in PDF documents with RAG.
-
-        Args:
-            query: Search query
-            topk: Number of chunks to retrieve
-            pdf_collection: PDF collection name
-
-        Returns:
-            Dictionary with 'answer' and 'hits', or None on error
+        Phase 4 — not yet implemented.
         """
-        raise NotImplementedError("TODO: implement PDF RAG search.")
+        raise NotImplementedError("TODO: implement PDF RAG search (Phase 4).")
 
     def search_product_pdfs(
         self, query: str, topk: int = 3, pdf_products_collection: str = "pdf_produkte"
     ) -> list[dict]:
         """
         Search in product PDF documents.
-
-        Args:
-            query: Search query
-            topk: Number of chunks to retrieve
-            pdf_products_collection: Product PDF collection name
-
-        Returns:
-            List of hit dictionaries
+        Phase 4 — not yet implemented.
         """
-        raise NotImplementedError("TODO: implement product PDF search.")
+        raise NotImplementedError("TODO: implement product PDF search (Phase 4).")
 
     def execute_sql_search(self, query: str) -> list[dict]:
         """
-        Execute SQL search query (delegated to product service).
-
-        Note: This is a placeholder. SQL queries should be handled by ProductService.
+        Execute SQL search query (delegated to ProductService).
 
         Args:
             query: SQL query string
@@ -136,25 +127,42 @@ class SearchService:
         Returns:
             List of result dictionaries
         """
-        raise NotImplementedError("TODO: implement SQL search delegation.")
+        from services import ServiceFactory
+        prod_svc = ServiceFactory.get_product_service()
+        return prod_svc.execute_sql_query(query)
 
     def _generate_llm_answer(self, query: str, hits: list[dict]) -> str:
         """
         Generate LLM answer based on search hits.
-
-        Args:
-            query: User query
-            hits: List of search hits
-
-        Returns:
-            LLM-generated answer string
+        Phase 4 — not yet implemented.
         """
-        raise NotImplementedError("TODO: implement LLM answer generation.")
+        raise NotImplementedError("TODO: implement LLM answer generation (Phase 4).")
 
     @staticmethod
     def _coerce_int(value) -> Optional[int]:
-        raise NotImplementedError("TODO: implement int coercion.")
+        """
+        Coerce value to int, returning None on failure.
+
+        Args:
+            value: Value to coerce
+
+        Returns:
+            Integer value or None if conversion fails
+        """
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return None
 
     @classmethod
     def _coerce_ints(cls, values: Iterable) -> list[int]:
-        raise NotImplementedError("TODO: implement list int coercion.")
+        """
+        Coerce iterable of values to list of ints, skipping invalid values.
+
+        Args:
+            values: Iterable of values to coerce
+
+        Returns:
+            List of valid integers (invalid values excluded)
+        """
+        return [v for v in (cls._coerce_int(x) for x in values) if v is not None]
