@@ -10,7 +10,7 @@ import uuid
 from io import BytesIO
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import VectorParams, Distance, HnswConfigDiff, PointStruct
+from qdrant_client.http.models import VectorParams, Distance, HnswConfigDiff, PointStruct, SearchParams
 import pdfplumber
 
 log = logging.getLogger(__name__)
@@ -100,7 +100,19 @@ class QdrantRepositoryImpl(QdrantRepository):
             hnsw_m: HNSW m parameter (connections per point)
             hnsw_ef_construct: HNSW ef_construct parameter (search width during build)
         """
-        raise NotImplementedError("TODO: implement collection creation.")
+        if self._client.collection_exists(collection_name):
+            log.debug("ensure_collection: '%s' already exists, skipping", collection_name)
+            return
+        distance_enum = getattr(Distance, distance.upper())
+        self._client.create_collection(
+            collection_name,
+            vectors_config=VectorParams(size=vector_size, distance=distance_enum),
+            hnsw_config=HnswConfigDiff(m=hnsw_m, ef_construct=hnsw_ef_construct),
+        )
+        log.debug(
+            "ensure_collection: created '%s' size=%d distance=%s m=%d ef=%d",
+            collection_name, vector_size, distance, hnsw_m, hnsw_ef_construct,
+        )
 
     def delete_collection(self, collection_name: str) -> None:
         """
@@ -109,7 +121,15 @@ class QdrantRepositoryImpl(QdrantRepository):
         Args:
             collection_name: Name of the collection to delete
         """
-        raise NotImplementedError("TODO: implement collection deletion.")
+        try:
+            self._client.delete_collection(collection_name)
+            log.debug("delete_collection: deleted '%s'", collection_name)
+        except Exception as e:
+            # Swallow 404 / not-found — collection already absent is OK
+            if "404" in str(e) or "not found" in str(e).lower() or "doesn't exist" in str(e).lower():
+                log.debug("delete_collection: '%s' already absent", collection_name)
+            else:
+                raise
 
     def count(self, collection_name: str, exact: bool = True) -> int:
         """
@@ -122,7 +142,12 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Number of points in collection
         """
-        raise NotImplementedError("TODO: implement count.")
+        try:
+            result = self._client.count(collection_name, exact=exact)
+            return result.count
+        except Exception as e:
+            log.debug("count: collection '%s' absent or error: %s", collection_name, e)
+            return 0
 
     def upsert_points(self, collection_name: str, points: list[dict]) -> None:
         """
@@ -132,7 +157,28 @@ class QdrantRepositoryImpl(QdrantRepository):
             collection_name: Name of the collection
             points: List of point dictionaries with 'id', 'vector', 'payload'
         """
-        raise NotImplementedError("TODO: implement point upsert.")
+        if not points:
+            log.debug("upsert_points: no points to upsert for '%s'", collection_name)
+            return
+
+        # Ensure collection exists first, using first vector's size
+        vector_size = len(points[0]['vector'])
+        self.ensure_collection(collection_name, vector_size=vector_size)
+
+        structs = []
+        for point in points:
+            vector = point['vector']
+            # Defensive .tolist() in case numpy array slips through
+            if hasattr(vector, 'tolist'):
+                vector = vector.tolist()
+            structs.append(PointStruct(
+                id=point['id'],
+                vector=vector,
+                payload=point.get('payload', {}),
+            ))
+
+        self._client.upsert(collection_name, points=structs, wait=True)
+        log.debug("upsert_points: upserted %d points into '%s'", len(structs), collection_name)
 
     def search(
         self,
@@ -155,7 +201,15 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             List of search results (points)
         """
-        raise NotImplementedError("TODO: implement vector search.")
+        results = self._client.search(
+            collection_name,
+            query_vector=query_vector,
+            limit=limit,
+            with_payload=with_payload,
+            search_params=SearchParams(hnsw_ef=hnsw_ef),
+        )
+        log.debug("search: got %d hits from '%s'", len(results), collection_name)
+        return results
 
     def scroll(
         self,
@@ -176,7 +230,14 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Tuple of (points, next_offset)
         """
-        raise NotImplementedError("TODO: implement scroll.")
+        points, next_offset = self._client.scroll(
+            collection_name,
+            limit=limit,
+            with_payload=with_payload,
+            offset=offset,
+        )
+        log.debug("scroll: retrieved %d points from '%s'", len(points), collection_name)
+        return points, next_offset
 
     def get_collection_info(self, collection_name: str) -> dict:
         """
@@ -188,7 +249,37 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Dictionary with collection info
         """
-        raise NotImplementedError("TODO: implement collection info.")
+        try:
+            info = self._client.get_collection(collection_name)
+            vectors_config = info.config.params.vectors
+            # VectorParams is stored directly (not as dict) for single-vector collections
+            if hasattr(vectors_config, 'size'):
+                vector_size = vectors_config.size
+                distance = str(vectors_config.distance)
+            else:
+                vector_size = 0
+                distance = "COSINE"
+            hnsw_config = info.config.hnsw_config
+            hnsw_m = hnsw_config.m if hnsw_config and hnsw_config.m is not None else 16
+            hnsw_ef = hnsw_config.ef_construct if hnsw_config and hnsw_config.ef_construct is not None else 128
+            return {
+                'name': collection_name,
+                'vector_size': vector_size,
+                'distance': distance,
+                'points_count': info.points_count or 0,
+                'hnsw_m': hnsw_m,
+                'hnsw_ef_construct': hnsw_ef,
+            }
+        except Exception as e:
+            log.debug("get_collection_info: collection '%s' absent or error: %s", collection_name, e)
+            return {
+                'name': collection_name,
+                'vector_size': 0,
+                'distance': 'COSINE',
+                'points_count': 0,
+                'hnsw_m': 16,
+                'hnsw_ef_construct': 128,
+            }
 
     # ======================
     # High-level operations
@@ -201,7 +292,10 @@ class QdrantRepositoryImpl(QdrantRepository):
         Args:
             collection_name: Name of the collection (uses default if None)
         """
-        raise NotImplementedError("TODO: implement index truncation.")
+        target = collection_name or self._default_collection
+        self.delete_collection(target)
+        self.ensure_collection(target, vector_size=384, distance='COSINE', hnsw_m=16, hnsw_ef_construct=128)
+        log.debug("truncate_index: truncated '%s'", target)
 
     def get_unique_sources(self, collection_name: str) -> set[str]:
         """
@@ -215,7 +309,24 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Set of unique source filenames
         """
-        raise NotImplementedError("TODO: implement unique source listing.")
+        sources = set()
+        offset = None
+        try:
+            while True:
+                points, next_offset = self.scroll(
+                    collection_name, limit=100, with_payload=True, offset=offset
+                )
+                for point in points:
+                    payload = point.payload or {}
+                    source = payload.get('source')
+                    if source:
+                        sources.add(source)
+                if next_offset is None:
+                    break
+                offset = next_offset
+        except Exception as e:
+            log.debug("get_unique_sources: collection '%s' absent or error: %s", collection_name, e)
+        return sources
 
     # ======================
     # PDF-specific operations
@@ -240,7 +351,22 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Number of chunks uploaded
         """
-        raise NotImplementedError("TODO: implement PDF chunk upload.")
+        self.ensure_collection(collection_name, vector_size=384)
+        structs = []
+        for chunk, embedding in zip(chunks, embeddings):
+            vector = embedding.tolist() if hasattr(embedding, 'tolist') else embedding
+            structs.append(PointStruct(
+                id=uuid.UUID(str(uuid.uuid4())),
+                vector=vector,
+                payload={
+                    'text': chunk['text'],
+                    'page': chunk['page'],
+                    'source': source_filename,
+                },
+            ))
+        self._client.upsert(collection_name, points=structs, wait=True)
+        log.debug("upload_pdf_chunks: uploaded %d chunks to '%s'", len(structs), collection_name)
+        return len(chunks)
 
     @staticmethod
     def extract_pdf_chunks(pdf_file, chunk_size: int = 300) -> list[dict]:
@@ -254,7 +380,16 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             List of chunk dictionaries with 'text' and 'page'
         """
-        raise NotImplementedError("TODO: implement PDF text extraction.")
+        chunks = []
+        with pdfplumber.open(pdf_file) as pdf:
+            for page_num, page in enumerate(pdf.pages, start=1):
+                text = page.extract_text() or ""
+                # Split into non-overlapping chunks of chunk_size characters
+                for i in range(0, len(text), chunk_size):
+                    chunk_text = text[i:i + chunk_size]
+                    if chunk_text.strip():
+                        chunks.append({'text': chunk_text, 'page': page_num})
+        return chunks
 
     def get_pdf_counts(
         self, pdf_collection: str, pdf_products_collection: str
@@ -269,7 +404,19 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Dictionary with counts for each collection and total
         """
-        raise NotImplementedError("TODO: implement PDF counts.")
+        try:
+            count1 = len(self.get_unique_sources(pdf_collection))
+        except Exception:
+            count1 = 0
+        try:
+            count2 = len(self.get_unique_sources(pdf_products_collection))
+        except Exception:
+            count2 = 0
+        return {
+            pdf_collection: count1,
+            pdf_products_collection: count2,
+            'total': count1 + count2,
+        }
 
     def list_uploaded_pdfs(self, collection_name: str) -> list[str]:
         """
@@ -281,4 +428,8 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             Sorted list of unique PDF filenames
         """
-        raise NotImplementedError("TODO: implement PDF list.")
+        try:
+            sources = self.get_unique_sources(collection_name)
+            return sorted(sources)
+        except Exception:
+            return []
