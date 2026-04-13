@@ -179,7 +179,13 @@ Plans:
 - ⚠️ **`wait=True`:** Always pass `wait=True` to `client.upsert()`. Without it, a subsequent `count()` or `search()` may see 0 results even after a successful upsert.
 - ⚠️ **No `recreate_collection`:** `QdrantClient.recreate_collection()` was deprecated in v1.1.1 and removed. Use `delete_collection()` + `create_collection()` for full rebuilds (Strategy C).
 
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — QdrantRepositoryImpl core methods (ensure_collection, upsert, search, count, delete, scroll, get_collection_info) (Wave 1)
+- [ ] 03-02-PLAN.md — IndexService (build_index, product_to_document, embed, ETL log) + routes/index.py (Wave 2)
+- [ ] 03-03-PLAN.md — QdrantRepositoryImpl PDF methods + PDFService + routes/pdf.py (Wave 2)
+- [ ] 03-04-PLAN.md — SearchService (vector_search, execute_sql_search) + routes/search.py (Wave 2)
 
 ---
 
