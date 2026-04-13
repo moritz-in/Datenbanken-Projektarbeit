@@ -81,6 +81,13 @@ class MySQLRepository(ABC):
         """Get a product by its ID"""
         pass
 
+    @abstractmethod
+    def call_import_product(self, name: str, description: str, brand_name: str,
+                             category_name: str, price: float, sku: str,
+                             load_class: str, application: str) -> dict:
+        """Call import_product() procedure. Returns {result_code: int, result_message: str}."""
+        pass
+
 
 class MySQLRepositoryImpl(MySQLRepository):
     """Concrete implementation of MySQL repository"""
@@ -593,3 +600,54 @@ class MySQLRepositoryImpl(MySQLRepository):
 
             product["tags_str"] = ", ".join(tags)
             return product
+
+    # ------------------------------------------------------------------
+    # Stored Procedure methods (Plan 02-02)
+    # ------------------------------------------------------------------
+
+    def call_import_product(self, name: str, description: str, brand_name: str,
+                             category_name: str, price: float, sku: str,
+                             load_class: str, application: str) -> dict:
+        """
+        Call import_product() stored procedure using raw DBAPI cursor.
+
+        Uses raw pymysql cursor (not SQLAlchemy text()) because OUT parameters
+        require MySQL user variable syntax (@rc, @rm) which is incompatible with
+        SQLAlchemy's bound parameter handling.
+
+        CRITICAL (Pitfall 12): cursor.nextset() loop flushes all implicit result
+        sets returned by CALL — without this the connection pool state is corrupted.
+
+        Args:
+            name: Product name
+            description: Product description
+            brand_name: Brand name (resolved to ID in procedure)
+            category_name: Category name (must exist — result_code=2 if not found)
+            price: Product price (must be >= 0)
+            sku: Stock-keeping unit (duplicate → result_code=1)
+            load_class: Load classification (e.g. 'high', 'medium', 'low')
+            application: Application type (e.g. 'precision', 'automotive')
+
+        Returns:
+            dict with keys:
+                result_code (int): 0=success, 1=duplicate SKU, 2=validation error, 3=db error
+                result_message (str): German message describing the outcome
+        """
+        with self._session_factory() as session:
+            conn = session.connection()
+            cursor = conn.connection.cursor()  # raw pymysql cursor
+            try:
+                cursor.execute("SET @rc = 0, @rm = ''")
+                cursor.execute(
+                    "CALL import_product(%s, %s, %s, %s, %s, %s, %s, %s, @rc, @rm)",
+                    (name, description, brand_name, category_name,
+                     float(price), sku, load_class, application)
+                )
+                # CRITICAL (Pitfall 12): flush all result sets before reading OUT params
+                while cursor.nextset():
+                    pass
+                cursor.execute("SELECT @rc AS result_code, @rm AS result_message")
+                row = cursor.fetchone()
+                return {"result_code": int(row[0] or 0), "result_message": str(row[1] or "")}
+            finally:
+                cursor.close()

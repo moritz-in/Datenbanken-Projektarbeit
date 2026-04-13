@@ -133,6 +133,36 @@ class ProductService:
         """
         self.mysql_repo.delete_product(product_id)
 
+    def import_product(self, name: str, description: str, brand_name: str,
+                       category_name: str, price: float, sku: str,
+                       load_class: str = '', application: str = '') -> dict:
+        """
+        Call import_product() stored procedure.
+
+        Demonstrates A4: the procedure runs entirely in MySQL — validation,
+        duplicate check, and INSERT — without Python business logic.
+
+        Args:
+            name: Product name (required)
+            description: Product description
+            brand_name: Brand name (procedure falls back to first brand if not found)
+            category_name: Category name (required — procedure returns code 2 if missing)
+            price: Product price (must be >= 0)
+            sku: Stock-keeping unit (procedure returns code 1 on duplicate)
+            load_class: Load classification ('high', 'medium', 'low')
+            application: Application type ('precision', 'automotive', 'industrial')
+
+        Returns:
+            dict with keys:
+                result_code (int): 0=success, 1=duplicate, 2=validation_error, 3=db_error
+                result_message (str): German outcome message
+        """
+        return self.mysql_repo.call_import_product(
+            name=name, description=description, brand_name=brand_name,
+            category_name=category_name, price=price, sku=sku,
+            load_class=load_class, application=application
+        )
+
     def _resolve_tag_ids(self, tags_str: str) -> list[int]:
         """
         Resolve comma-separated tag names to tag IDs.
