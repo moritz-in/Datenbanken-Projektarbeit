@@ -11,5 +11,9 @@ bp = Blueprint("audit", __name__)
 
 @bp.get("/audit")
 def audit():
-    """View audit log with pagination"""
-    raise NotImplementedError("TODO: implement audit view.")
+    """View ETL run log with pagination."""
+    svc = ServiceFactory.get_product_service()
+    page = _get_int(request.args, "page", 1)
+    page_size = _get_int(request.args, "page_size", 10)
+    result = svc.get_audit_log(page=page, page_size=page_size)
+    return render_template("audit.html", result=result, page=page, page_size=page_size)
