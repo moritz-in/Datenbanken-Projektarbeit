@@ -29,9 +29,9 @@
 
 ### A3 — Trigger
 
-- [ ] **TRIG-01**: MySQL `AFTER UPDATE ON products`-Trigger erstellt — schreibt Eintrag in `product_change_log` mit alten und neuen Werten + Timestamp
-- [ ] **TRIG-02**: Trigger ist **konditional** — Logeintrag nur wenn sich ein Wert tatsächlich ändert (`IF OLD.x <> NEW.x`)
-- [ ] **TRIG-03**: Trigger-DDL in `schema.sql` oder separatem `triggers.sql` eingespielt beim DB-Start
+- [x] **TRIG-01**: MySQL `AFTER UPDATE ON products`-Trigger erstellt — schreibt Eintrag in `product_change_log` mit alten und neuen Werten + Timestamp
+- [x] **TRIG-02**: Trigger ist **konditional** — Logeintrag nur wenn sich ein Wert tatsächlich ändert (`IF OLD.x <> NEW.x`)
+- [x] **TRIG-03**: Trigger-DDL in `schema.sql` oder separatem `triggers.sql` eingespielt beim DB-Start
 
 ### A4 — Stored Procedure
 
@@ -73,7 +73,7 @@
 ### Supporting Routes
 
 - [x] **ROUTE-01**: `dashboard.py` implementiert — Produktanzahl, letzter ETL-Lauf, System-Status aller 3 DBs
-- [ ] **ROUTE-02**: `audit.py` implementiert — ETL-Lauf-Log aus `etl_run_log` angezeigt
+- [x] **ROUTE-02**: `audit.py` implementiert — ETL-Lauf-Log aus `etl_run_log` angezeigt
 - [x] **ROUTE-03**: `validate.py` implementiert — Schema-Validierung (erwartet vs. tatsächlich) mit Ergebnis-Anzeige
 - [ ] **ROUTE-04**: `pdf.py` implementiert — PDF-Upload → Text-Extraktion → Qdrant-Indexierung
 
@@ -126,9 +126,9 @@ Wird nach Roadmap-Erstellung befüllt.
 | TXN-06 | Phase 1 | Complete |
 | TXN-07 | Phase 1 | Complete |
 | TXN-08 | Phase 1 | Complete |
-| TRIG-01 | Phase 2 | Pending |
-| TRIG-02 | Phase 2 | Pending |
-| TRIG-03 | Phase 2 | Pending |
+| TRIG-01 | Phase 2 | Complete |
+| TRIG-02 | Phase 2 | Complete |
+| TRIG-03 | Phase 2 | Complete |
 | PROC-01 | Phase 2 | Complete |
 | PROC-02 | Phase 2 | Complete |
 | PROC-03 | Phase 2 | Complete |
@@ -155,7 +155,7 @@ Wird nach Roadmap-Erstellung befüllt.
 | GRAPH-06 | Phase 4 | Pending |
 | GRAPH-07 | Phase 4 | Pending |
 | ROUTE-01 | Phase 1 | Complete |
-| ROUTE-02 | Phase 2 | Pending |
+| ROUTE-02 | Phase 2 | Complete |
 | ROUTE-03 | Phase 2 | Complete |
 | ROUTE-04 | Phase 3 | Pending |
 | DOC-01 | Phase 5 | Pending |

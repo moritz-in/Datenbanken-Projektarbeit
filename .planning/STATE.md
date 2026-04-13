@@ -31,9 +31,9 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 2 — MySQL DDL Features (A3, A4, A5) — **In Progress**
-**Active Plan:** Plan 02 complete (import_product() stored procedure + /validate/procedure UI)
-**Status:** In progress — Plan 03 (indexes) remaining
+**Active Phase:** Phase 2 — MySQL DDL Features (A3, A4, A5) — **Complete**
+**Active Plan:** Plan 03 complete (B-Tree index analysis + /validate index display)
+**Status:** Phase 2 DONE — Ready to start Phase 3 (Qdrant Vektor-Suche)
 
 ```
 Progress: [██████████] 100%
@@ -49,7 +49,7 @@ Progress: [██████████] 100%
 |-------|------|-------------|--------|-----------|
 | 0 | Foundation & Blockers | FOUND-01–08 (8 reqs) | **Complete** | 2026-04-02 |
 | 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
-| 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **In Progress** | - |
+| 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **Complete** | 2026-04-13 |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | Pending | - |
 | 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
 | 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
@@ -100,6 +100,9 @@ Progress: [██████████] 100%
 | IntegrityError caught at route layer — repository propagates, route shows flash | TXN-04/TXN-05 rollback demo visible to user without exposing raw SQL errors |
 | Single-click delete via POST form — no JS confirmation | CONTEXT.md locked decision; PRG redirect on all delete outcomes |
 | templates/ bind-mounted in docker-compose.override.yml | Enables live template reload without Docker image rebuild (5+ min savings) |
+| `DELIMITER $$` required for trigger DDL in MySQL init scripts | MySQL client uses `;` as delimiter by default — `BEGIN...END` body contains semicolons that would break parsing without `DELIMITER $$` |
+| NULL-safe comparison in trigger for nullable fields | Simple `OLD.x <> NEW.x` fails silently when either value is NULL; three-part OR check correctly detects all transition types |
+| `changed_by = 'web_ui'` hardcoded in trigger body | MySQL triggers have no access to Flask session context; hardcoded value is the correct approach |
 
 ### Known Risks
 
