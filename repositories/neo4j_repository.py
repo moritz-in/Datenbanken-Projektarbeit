@@ -154,15 +154,63 @@ class Neo4jRepositoryImpl(Neo4jRepository):
 
     def sync_products(self, products: list[dict]) -> int:
         """
-        Sync products to Neo4j graph. Returns count of products processed.
+        Sync products to Neo4j graph using MERGE-only Cypher.
 
-        Args:
-            products: List of product dicts with keys: id, name, brand, category, tags
+        Uses MERGE exclusively — safe to call on every index build.
+        Creates Product, Brand, Category, Tag nodes and relationships.
 
         Returns:
-            Count of products successfully synced
+            Number of products processed
         """
-        raise NotImplementedError("TODO: implement sync_products in Phase 4 Plan 02.")
+        if not products:
+            return 0
+
+        cypher = """
+        UNWIND $products AS p
+        MERGE (prod:Product {mysql_id: p.mysql_id})
+          ON CREATE SET prod.name = p.name, prod.sku = p.sku, prod.price = p.price
+          ON MATCH SET  prod.name = p.name, prod.sku = p.sku, prod.price = p.price
+
+        WITH prod, p
+        MERGE (b:Brand {name: p.brand_name})
+        MERGE (prod)-[:MADE_BY]->(b)
+
+        WITH prod, p
+        MERGE (c:Category {name: p.category_name})
+        MERGE (prod)-[:IN_CATEGORY]->(c)
+
+        WITH prod, p
+        UNWIND (CASE WHEN size(p.tags) > 0 THEN p.tags ELSE [null] END) AS tag_name
+        WITH prod, tag_name WHERE tag_name IS NOT NULL AND tag_name <> ''
+        MERGE (t:Tag {name: tag_name})
+        MERGE (prod)-[:HAS_TAG]->(t)
+        """
+
+        # Normalize product dicts for Cypher params
+        params_list = []
+        for prod in products:
+            # Normalize tags to list[str]
+            tags = prod.get('tags') or []
+            if isinstance(tags, str):
+                tags = [t.strip() for t in tags.split(',') if t.strip()]
+            elif not isinstance(tags, list):
+                tags = []
+            else:
+                tags = [str(t).strip() for t in tags if t]
+
+            params_list.append({
+                'mysql_id': int(prod['id']),
+                'name': prod.get('name') or '',
+                'sku': prod.get('sku') or '',
+                'price': float(prod.get('price') or 0),
+                'brand_name': prod.get('brand') or 'Unknown',
+                'category_name': prod.get('category') or 'Unknown',
+                'tags': tags,
+            })
+
+        self.execute_cypher(cypher, {'products': params_list})
+        log.info("sync_products: synced %d products to Neo4j", len(products))
+        return len(products)
 
     # ======================
     # High-level operations
