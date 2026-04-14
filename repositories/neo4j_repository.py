@@ -67,6 +67,9 @@ class Neo4jRepositoryImpl(Neo4jRepository):
             user: Neo4j username
             password: Neo4j password
         """
+        self._uri = uri
+        self._user = user
+        self._password = password
         self._driver = GraphDatabase.driver(uri, auth=(user, password))
         self._driver.verify_connectivity()
         log.info("Neo4j driver connected to %s", uri)
@@ -85,6 +88,10 @@ class Neo4jRepositoryImpl(Neo4jRepository):
         Raises:
             Exception: On query execution errors
         """
+        if self._driver is None:
+            log.info("Neo4j driver was closed — reconnecting to %s", self._uri)
+            self._driver = GraphDatabase.driver(self._uri, auth=(self._user, self._password))
+            self._driver.verify_connectivity()
         with self._driver.session(database="neo4j") as session:
             result = session.run(query, parameters or {})
             return [dict(r) for r in result]  # MUST consume inside with block
