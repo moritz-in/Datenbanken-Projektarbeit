@@ -191,6 +191,17 @@ def create_app():
 
     log.info("✓ All blueprints registered")
 
+    @app.teardown_appcontext
+    def _close_neo4j(exception=None):
+        """Close Neo4j driver when app context tears down (e.g., on docker stop)."""
+        from repositories import RepositoryFactory, Neo4jRepositoryImpl
+        repo = RepositoryFactory._instances.get(Neo4jRepositoryImpl)
+        if repo is not None:
+            try:
+                repo.close()
+            except Exception:
+                log.debug("Neo4j driver close skipped (already closed or never opened)")
+
     return app
 
 
