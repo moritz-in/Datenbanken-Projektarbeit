@@ -94,10 +94,66 @@ class SearchService:
         self, strategy: str, query: str, topk: int = 5, use_graph_enrichment: bool = True
     ) -> dict:
         """
-        Perform RAG (Retrieval-Augmented Generation) search with graph enrichment.
-        Phase 4 — not yet implemented.
+        RAG search: vector retrieval → graph enrichment → LLM answer.
+
+        Returns:
+            {
+                'query': str,
+                'answer': str,
+                'hits': list[dict],   # enriched with graph_source, tags, category, related_products
+            }
         """
-        raise NotImplementedError("TODO: implement RAG search (Phase 4).")
+        coll = current_app.config.get("QDRANT_COLLECTION", "products")
+        query_vector = self.embed_texts([query])[0]
+
+        # Vector retrieval — call qdrant_repo.search() directly to access hit.id
+        raw_hits = self.qdrant_repo.search(coll, query_vector, limit=topk, with_payload=True)
+
+        # Build hit dicts, capturing mysql_id from point id
+        hits = []
+        mysql_ids = []
+        for h in raw_hits:
+            payload = h.payload or {}
+            mysql_id = h.id if isinstance(h.id, int) else None
+            if mysql_id is not None:
+                mysql_ids.append(mysql_id)
+            hits.append({
+                'mysql_id': mysql_id,
+                'title': payload.get('title', ''),
+                'brand': payload.get('brand', ''),
+                'price': payload.get('price', 0),
+                'score': h.score,
+                'doc_preview': payload.get('doc_preview', ''),
+                'category': '',
+                'tags': [],
+                'related_products': [],
+                'graph_source': None,
+            })
+
+        # Graph enrichment
+        if use_graph_enrichment and self.neo4j_repo is not None and mysql_ids:
+            try:
+                enrichment = self.neo4j_repo.get_product_relationships(mysql_ids)
+                for hit in hits:
+                    mid = hit.get('mysql_id')
+                    if mid is not None and mid in enrichment:
+                        data = enrichment[mid]
+                        hit['category'] = data.get('category', '')
+                        hit['tags'] = data.get('tags') or []
+                        hit['related_products'] = data.get('related_products') or []
+                        # Override brand/title from graph if more complete
+                        if data.get('brand'):
+                            hit['brand'] = data['brand']
+                        if data.get('title'):
+                            hit['title'] = data['title']
+                        hit['graph_source'] = 'Neo4j'
+            except Exception as e:
+                log.warning("Graph enrichment failed (non-fatal): %s", e)
+
+        # Generate LLM answer
+        answer = self._generate_llm_answer(query, hits)
+
+        return {'query': query, 'answer': answer, 'hits': hits}
 
     def pdf_rag_search(
         self, query: str, topk: int = 5, pdf_collection: str = "pdf_skripte"
@@ -133,10 +189,48 @@ class SearchService:
 
     def _generate_llm_answer(self, query: str, hits: list[dict]) -> str:
         """
-        Generate LLM answer based on search hits.
-        Phase 4 — not yet implemented.
+        Generate German-language LLM answer from query + enriched hits.
+        Returns localized fallback string if LLM client is not configured.
         """
-        raise NotImplementedError("TODO: implement LLM answer generation (Phase 4).")
+        client = self._get_llm_client()
+        if client is None:
+            return "[LLM nicht konfiguriert — OPENAI_API_KEY fehlt]"
+
+        # Build context from enriched hits
+        context_parts = []
+        for i, h in enumerate(hits[:5], 1):
+            tags_str = ', '.join(h.get('tags') or []) or '–'
+            related_str = ', '.join(h.get('related_products') or []) or '–'
+            context_parts.append(
+                f"{i}. {h.get('title', '')} "
+                f"(Marke: {h.get('brand', '–')}, "
+                f"Kategorie: {h.get('category', '–')}, "
+                f"Tags: {tags_str}, "
+                f"Ähnliche Produkte: {related_str}, "
+                f"Preis: {h.get('price', 0):.2f} EUR)"
+            )
+        context_text = '\n'.join(context_parts)
+
+        prompt = (
+            f"Du bist ein hilfreicher Produktberater. "
+            f"Beantworte folgende Anfrage auf Deutsch in 2-3 Sätzen:\n\n"
+            f"Anfrage: {query}\n\n"
+            f"Relevante Produkte aus der Datenbank:\n{context_text}\n\n"
+            f"Antworte auf Basis der Produktliste. Nenne konkrete Produktnamen."
+        )
+
+        model_name = current_app.config.get("LLM_MODEL", "gpt-4.1-mini")
+        try:
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.3,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            log.warning("LLM answer generation failed: %s", e)
+            return f"[LLM-Fehler: {e}]"
 
     @staticmethod
     def _coerce_int(value) -> Optional[int]:
