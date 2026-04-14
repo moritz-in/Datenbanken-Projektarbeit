@@ -4,6 +4,7 @@ Flask Application Factory
 Clean 3-tier architecture with Controller-Service-Repository pattern.
 All routes are organized in separate blueprint files.
 """
+import atexit
 import logging
 import os
 from datetime import date
@@ -191,16 +192,18 @@ def create_app():
 
     log.info("✓ All blueprints registered")
 
-    @app.teardown_appcontext
-    def _close_neo4j(exception=None):
-        """Close Neo4j driver when app context tears down (e.g., on docker stop)."""
+    def _shutdown_neo4j():
+        """Close Neo4j driver once at process exit (not per-request)."""
         from repositories import RepositoryFactory, Neo4jRepositoryImpl
         repo = RepositoryFactory._instances.get(Neo4jRepositoryImpl)
         if repo is not None:
             try:
                 repo.close()
+                log.info("Neo4j driver closed at process exit")
             except Exception:
                 log.debug("Neo4j driver close skipped (already closed or never opened)")
+
+    atexit.register(_shutdown_neo4j)
 
     return app
 
