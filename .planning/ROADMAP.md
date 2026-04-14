@@ -254,7 +254,10 @@ Plans:
 **Pitfall Warnings:**
 - ⚠️ Write this LAST — the comparison is meaningless without real results from all three search modes. Any placeholder output will be obvious to the grader.
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+Plans:
+- [ ] 05-01-PLAN.md — COMPARISON.md: run real queries against live stack, write 3×3 comparison matrix with actual results, HNSW + B-Tree theory (Wave 1)
 
 ---
 
@@ -267,7 +270,7 @@ Plans:
 | 2. MySQL DDL Features | 13 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02–03) | 3/3 | Complete | 2026-04-13 |
 | 3. Qdrant Vektor-Suche | 4/4 | Complete   | 2026-04-13 | - |
 | 4. Neo4j Graph & RAG | 3/3 | Complete   | 2026-04-14 | - |
-| 5. Polish & Dokumentation | 1 (DOC-01) | 0/TBD | Not started | - |
+| 5. Polish & Dokumentation | 1 (DOC-01) | 0/1 | Not started | - |
 
 **Total:** 50/50 requirements mapped ✓
 
