@@ -223,7 +223,12 @@ Plans:
 - ⚠️ **Anti-Pattern 3 (driver per request):** `Neo4jRepositoryImpl` is a `RepositoryFactory` singleton — the driver is created ONCE. Never instantiate `Neo4jRepositoryImpl` outside the factory.
 - ⚠️ **`sync_products()` not in ABC:** This method is not in the current `Neo4jRepository` ABC. Add it as an `@abstractmethod` (with `NoOpNeo4jRepository` returning `0`) so the factory pattern remains consistent.
 
-**Plans:** TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Neo4jRepositoryImpl core (driver init, execute_cypher, close, get_product_relationships) + teardown_appcontext (Wave 1)
+- [ ] 04-02-PLAN.md — sync_products MERGE Cypher + IndexService.build_index integration (Wave 2)
+- [ ] 04-03-PLAN.md — SearchService.rag_search + _generate_llm_answer + routes/rag.py (Wave 2)
 
 ---
 
