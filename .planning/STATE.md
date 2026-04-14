@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: planning
-last_updated: "2026-04-14T07:31:54.296Z"
+last_updated: "2026-04-14T09:47:32.554Z"
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
-  percent: 94
+  total_plans: 18
+  completed_plans: 18
+  percent: 100
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
 **Last updated:** 2026-04-14
-**Session:** Phase 4 Plan 03 complete — RAG pipeline with Neo4j graph enrichment wired
+**Session:** Phase 4 Plan 04 complete — Neo4j driver null-after-teardown bug fixed
 
 ---
 
@@ -31,14 +31,14 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 4 — Neo4j Graph & RAG (A7) — **In Progress**
-**Active Plan:** Plan 03 complete (RAG search + /rag route)
-**Status:** Ready to plan
+**Active Phase:** Phase 4 — Neo4j Graph & RAG (A7) — **Complete**
+**Active Plan:** Plan 04 complete (Neo4j driver null-after-teardown bug fix)
+**Status:** Phase 4 fully done — ready for Phase 5
 
 ```
-Progress: [█████████░] 94%
-           [COMPLETE | COMPLETE | COMPLETE | 100%    |         |        ]
-           [ 100%    | 100%    | 100%     | 3/3     |   0%    |   0%  ]
+Progress: [██████████] 100%
+           [COMPLETE | COMPLETE | COMPLETE | COMPLETE |         |        ]
+           [ 100%    | 100%    | 100%     | 4/4     |   0%    |   0%  ]
 ```
 
 ---
@@ -85,6 +85,7 @@ Progress: [█████████░] 94%
 | Phase 04-neo4j-graph-rag-a7 P01 | 3min | 2 tasks | 2 files |
 | Phase 04-neo4j-graph-rag-a7 P03 | 3min | 2 tasks | 2 files |
 | Phase 04-neo4j-graph-rag-a7 P02 | 5min | 2 tasks | 3 files |
+| Phase 04-neo4j-graph-rag-a7 P04 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -115,7 +116,8 @@ Progress: [█████████░] 94%
 | `execute_sql_search` uses local import ServiceFactory | Avoids circular import: services/__init__.py already imports SearchService |
 | Phase 4 stubs preserved in SearchService | rag_search/pdf_rag_search/search_product_pdfs throw NotImplementedError; /search catches it → empty results (no 501) |
 | `execute_cypher` consumes Result inside `with session:` block | `session.run()` returns lazy Result; consuming outside session scope raises SessionExpiredError at call site |
-| `teardown_appcontext` (not `teardown_request`) for Neo4j close | teardown_request fires on every HTTP request; teardown_appcontext fires on app context teardown (shutdown only) |
+| `teardown_appcontext` fires per-request, not per-shutdown | teardown_appcontext fires on every HTTP request; replaced with atexit.register which fires once at process exit — correct semantics for singleton driver |
+| Lazy reconnect in execute_cypher() | if self._driver is None, transparently reconnect before session.run(); prevents AttributeError after close() sets _driver=None without changing close() semantics |
 | `qdrant_repo.search()` called directly in rag_search (not vector_search()) | hit.id provides mysql_id for Neo4j lookup; vector_search() discards the id field |
 | `_generate_llm_answer` returns German fallback when OpenAI client is None | OPENAI_API_KEY absent → graceful degradation; RAG route stays functional without LLM |
 | Graph enrichment wrapped in try/except (non-fatal) | Neo4j unavailable should not break vector search; log.warning and continue without enrichment |
@@ -156,13 +158,13 @@ Progress: [█████████░] 94%
 
 ### What Was Done This Session
 
-- Executed Phase 4 Plan 03: RAG pipeline with Neo4j graph enrichment wired
-  - rag_search: embed query → Qdrant vector retrieval (using qdrant_repo.search() directly for hit.id) → Neo4j graph enrichment → LLM answer
-  - hit.id used as mysql_id (not payload) for Neo4j get_product_relationships() lookup
-  - Graph enrichment: sets graph_source='Neo4j', category, tags, related_products; non-fatal exception handling
-  - _generate_llm_answer: German-language prompt with product context; fallback '[LLM nicht konfiguriert — OPENAI_API_KEY fehlt]' when no client
-  - routes/rag.py: GET /rag (empty form), POST /rag (full RAG pipeline), /graph-rag redirect
-  - GRAPH-05, GRAPH-07 satisfied; Phase 4 fully complete
+- Executed Phase 4 Plan 04: Fixed Neo4j driver null-after-teardown bug
+  - Root cause: @app.teardown_appcontext fires at end of every HTTP request (not only at process shutdown)
+  - After /rag request, teardown_appcontext called repo.close() → self._driver = None
+  - RepositoryFactory singleton kept broken instance; next /index call → AttributeError
+  - Fix 1: repositories/neo4j_repository.py — store _uri/_user/_password in __init__; add lazy-reconnect guard in execute_cypher()
+  - Fix 2: app.py — replace teardown_appcontext with atexit.register(_shutdown_neo4j) (fires once at process exit)
+  - GRAPH-06 satisfied; Phase 4 completely done
 
 ### What to Do Next
 
@@ -170,9 +172,9 @@ Progress: [█████████░] 94%
 
 ### Files Written This Session
 
-- `services/search_service.py` — rag_search + _generate_llm_answer implemented
-- `routes/rag.py` — GET/POST /rag handler + /graph-rag redirect
-- `.planning/phases/04-neo4j-graph-rag-a7/04-03-SUMMARY.md`
+- `repositories/neo4j_repository.py` — stored credentials + lazy reconnect guard
+- `app.py` — atexit.register instead of teardown_appcontext
+- `.planning/phases/04-neo4j-graph-rag-a7/04-04-SUMMARY.md`
 
 ---
 
