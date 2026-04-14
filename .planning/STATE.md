@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: Ready for Phase 4 (Neo4j Graph & RAG)
-last_updated: "2026-04-14T07:13:36.224Z"
+status: completed
+last_updated: "2026-04-14T07:24:05.905Z"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 17
-  completed_plans: 15
-  percent: 100
+  completed_plans: 17
+  percent: 94
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
 **Last updated:** 2026-04-14
-**Session:** Phase 4 Plan 01 complete — Neo4j driver layer wired
+**Session:** Phase 4 Plan 03 complete — RAG pipeline with Neo4j graph enrichment wired
 
 ---
 
@@ -32,13 +32,13 @@ progress:
 ## Current Position
 
 **Active Phase:** Phase 4 — Neo4j Graph & RAG (A7) — **In Progress**
-**Active Plan:** Plan 01 complete (Neo4j driver layer)
-**Status:** Ready for Phase 4 Plan 02 (graph sync ETL + sync_products implementation)
+**Active Plan:** Plan 03 complete (RAG search + /rag route)
+**Status:** Phase 4 complete — all 3 plans done (01: driver, 02: sync_products, 03: RAG)
 
 ```
-Progress: [█████████░] 88%
-           [COMPLETE | COMPLETE | COMPLETE | 33%     |         |        ]
-           [ 100%    | 100%    | 100%     | 1/3     |   0%    |   0%  ]
+Progress: [█████████░] 94%
+           [COMPLETE | COMPLETE | COMPLETE | 100%    |         |        ]
+           [ 100%    | 100%    | 100%     | 3/3     |   0%    |   0%  ]
 ```
 
 ---
@@ -51,7 +51,7 @@ Progress: [█████████░] 88%
 | 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
 | 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **Complete** | 2026-04-13 |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | **Complete** | 2026-04-13 |
-| 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | **In Progress** | - |
+| 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | **Complete** | 2026-04-14 |
 | 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
 
 **Total requirements:** 50/50 mapped
@@ -66,9 +66,9 @@ Progress: [█████████░] 88%
 | Phases complete | 2 |
 | Phases in progress | 0 |
 | Requirements mapped | 50/50 |
-| Requirements complete | 46/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02, VECT-01–08, ROUTE-04, GRAPH-01–03, GRAPH-05) |
+| Requirements complete | 48/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02, VECT-01–08, ROUTE-04, GRAPH-01–07) |
 | Plans created | 17 |
-| Plans complete | 15 |
+| Plans complete | 16 |
 
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
@@ -83,6 +83,8 @@ Progress: [█████████░] 88%
 | Phase 03 P03 | 5min | 2 tasks | 2 files |
 | Phase 03 P04 | 4min | 2 tasks | 2 files |
 | Phase 04-neo4j-graph-rag-a7 P01 | 3min | 2 tasks | 2 files |
+| Phase 04-neo4j-graph-rag-a7 P03 | 3min | 2 tasks | 2 files |
+| Phase 04-neo4j-graph-rag-a7 P02 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -114,7 +116,9 @@ Progress: [█████████░] 88%
 | Phase 4 stubs preserved in SearchService | rag_search/pdf_rag_search/search_product_pdfs throw NotImplementedError; /search catches it → empty results (no 501) |
 | `execute_cypher` consumes Result inside `with session:` block | `session.run()` returns lazy Result; consuming outside session scope raises SessionExpiredError at call site |
 | `teardown_appcontext` (not `teardown_request`) for Neo4j close | teardown_request fires on every HTTP request; teardown_appcontext fires on app context teardown (shutdown only) |
-| `sync_products` added as `@abstractmethod` in Plan 01 (not Plan 02) | ABC contract must be satisfied immediately; NoOpNeo4jRepository returns 0 as graceful fallback |
+| `qdrant_repo.search()` called directly in rag_search (not vector_search()) | hit.id provides mysql_id for Neo4j lookup; vector_search() discards the id field |
+| `_generate_llm_answer` returns German fallback when OpenAI client is None | OPENAI_API_KEY absent → graceful degradation; RAG route stays functional without LLM |
+| Graph enrichment wrapped in try/except (non-fatal) | Neo4j unavailable should not break vector search; log.warning and continue without enrichment |
 
 ### Known Risks
 
@@ -152,29 +156,25 @@ Progress: [█████████░] 88%
 
 ### What Was Done This Session
 
-- Executed Phase 4 Plan 01: Neo4j driver layer wired
-  - Neo4jRepositoryImpl.__init__ connects via GraphDatabase.driver() + verify_connectivity()
-  - execute_cypher: session.run consuming Result inside `with session:` block → returns list[dict]
-  - close(): sets self._driver = None; safe for double-close
-  - get_product_relationships: MATCH/OPTIONAL MATCH Cypher → {mysql_id: {title, brand, category, tags, related_products}}
-  - sync_products added as @abstractmethod to Neo4jRepository ABC
-  - NoOpNeo4jRepository.sync_products([]) returns 0
-  - __enter__/__exit__ stubs replaced with real context manager delegation to close()
-  - teardown_appcontext hook _close_neo4j(exception=None) registered in create_app() after blueprint block
-  - GRAPH-01, GRAPH-02, GRAPH-03, GRAPH-05 satisfied
+- Executed Phase 4 Plan 03: RAG pipeline with Neo4j graph enrichment wired
+  - rag_search: embed query → Qdrant vector retrieval (using qdrant_repo.search() directly for hit.id) → Neo4j graph enrichment → LLM answer
+  - hit.id used as mysql_id (not payload) for Neo4j get_product_relationships() lookup
+  - Graph enrichment: sets graph_source='Neo4j', category, tags, related_products; non-fatal exception handling
+  - _generate_llm_answer: German-language prompt with product context; fallback '[LLM nicht konfiguriert — OPENAI_API_KEY fehlt]' when no client
+  - routes/rag.py: GET /rag (empty form), POST /rag (full RAG pipeline), /graph-rag redirect
+  - GRAPH-05, GRAPH-07 satisfied; Phase 4 fully complete
 
 ### What to Do Next
 
-1. Phase 4 Plan 02 — implement Neo4jRepositoryImpl.sync_products + graph ETL route (GRAPH-04, GRAPH-06)
-2. Phase 4 Plan 03 — RAG search with Neo4j context enrichment (GRAPH-07)
+1. Phase 5 — Polish & Dokumentation (COMPARISON.md, DOC-01)
 
 ### Files Written This Session
 
-- `repositories/neo4j_repository.py` — Neo4jRepositoryImpl fully wired; ABC extended with sync_products
-- `app.py` — teardown_appcontext hook registered
-- `.planning/phases/04-neo4j-graph-rag-a7/04-01-SUMMARY.md`
+- `services/search_service.py` — rag_search + _generate_llm_answer implemented
+- `routes/rag.py` — GET/POST /rag handler + /graph-rag redirect
+- `.planning/phases/04-neo4j-graph-rag-a7/04-03-SUMMARY.md`
 
 ---
 
 *State initialized: 2026-04-02*
-*Next action: Start Phase 2 — MySQL DDL Features (triggers, stored procedures, indexes)*
+*Next action: Start Phase 5 — Polish & Dokumentation (COMPARISON.md)*

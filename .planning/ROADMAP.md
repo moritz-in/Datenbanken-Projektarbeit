@@ -12,7 +12,7 @@
 - [x] **Phase 1 — MySQL CRUD & Transaktionen (A2)** — Repository write path with explicit transactions, rollback demos, CRUD routes (completed 2026-04-05)
 - [x] **Phase 2 — MySQL DDL Features (A3, A4, A5)** — Trigger, Stored Procedure, B-Tree indexes, EXPLAIN analysis (completed 2026-04-13)
 - [x] **Phase 3 — Qdrant Vektor-Suche (A6)** — Vector ETL, semantic search route, index build route, ETL logging (completed 2026-04-13)
-- [ ] **Phase 4 — Neo4j Graph & RAG (A7)** — Graph population, RAG pipeline, LLM answer generation, RAG route
+- [x] **Phase 4 — Neo4j Graph & RAG (A7)** — Graph population, RAG pipeline, LLM answer generation, RAG route (completed 2026-04-14)
 - [ ] **Phase 5 — Polish & Dokumentation** — COMPARISON.md comparative analysis
 
 ---
@@ -223,7 +223,7 @@ Plans:
 - ⚠️ **Anti-Pattern 3 (driver per request):** `Neo4jRepositoryImpl` is a `RepositoryFactory` singleton — the driver is created ONCE. Never instantiate `Neo4jRepositoryImpl` outside the factory.
 - ⚠️ **`sync_products()` not in ABC:** This method is not in the current `Neo4jRepository` ABC. Add it as an `@abstractmethod` (with `NoOpNeo4jRepository` returning `0`) so the factory pattern remains consistent.
 
-**Plans:** 1/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 04-01-PLAN.md — Neo4jRepositoryImpl core (driver init, execute_cypher, close, get_product_relationships) + teardown_appcontext (Wave 1)
@@ -266,7 +266,7 @@ Plans:
 | 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 3/3 | Complete | 2026-04-05 |
 | 2. MySQL DDL Features | 13 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02–03) | 3/3 | Complete | 2026-04-13 |
 | 3. Qdrant Vektor-Suche | 4/4 | Complete   | 2026-04-13 | - |
-| 4. Neo4j Graph & RAG | 1/3 | In Progress|  | - |
+| 4. Neo4j Graph & RAG | 3/3 | Complete   | 2026-04-14 | - |
 | 5. Polish & Dokumentation | 1 (DOC-01) | 0/TBD | Not started | - |
 
 **Total:** 50/50 requirements mapped ✓
