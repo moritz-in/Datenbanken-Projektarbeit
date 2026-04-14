@@ -11,7 +11,7 @@ from datetime import datetime
 from flask import current_app
 from sentence_transformers import SentenceTransformer
 
-from repositories import QdrantRepository, MySQLRepository
+from repositories import QdrantRepository, MySQLRepository, Neo4jRepository
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class IndexService:
         qdrant_repo: QdrantRepository,
         mysql_repo: MySQLRepository,
         embedding_model: Optional[SentenceTransformer] = None,
+        neo4j_repo: Optional[Neo4jRepository] = None,
     ):
         """
         Initialize index service.
@@ -32,10 +33,12 @@ class IndexService:
             qdrant_repo: Qdrant repository for vector operations
             mysql_repo: MySQL repository for loading products
             embedding_model: Optional pre-initialized embedding model
+            neo4j_repo: Optional Neo4j repository for graph sync
         """
         self.qdrant_repo = qdrant_repo
         self.mysql_repo = mysql_repo
         self._embedding_model = embedding_model
+        self.neo4j_repo = neo4j_repo
 
     def _get_embedding_model(self) -> SentenceTransformer:
         """Return injected embedding model singleton — never lazy-load here."""
@@ -149,6 +152,15 @@ class IndexService:
             # Upsert into Qdrant
             self.qdrant_repo.upsert_points(collection_name, points)
 
+            # Sync to Neo4j graph (GRAPH-06)
+            neo4j_count = 0
+            if self.neo4j_repo is not None:
+                try:
+                    neo4j_count = self.neo4j_repo.sync_products(products)
+                    log.info("build_index: synced %d products to Neo4j", neo4j_count)
+                except Exception as neo4j_err:
+                    log.warning("build_index: Neo4j sync failed (non-fatal): %s", neo4j_err)
+
             finished_at = datetime.utcnow()
             elapsed = (finished_at - started_at).total_seconds()
 
@@ -166,7 +178,7 @@ class IndexService:
                 "build_index: strategy=%s indexed=%d elapsed=%.1fs",
                 strategy, len(products), elapsed,
             )
-            return {'count': len(products), 'elapsed': elapsed, 'strategy': strategy}
+            return {'count': len(products), 'elapsed': elapsed, 'strategy': strategy, 'neo4j_count': neo4j_count}
 
         except Exception as e:
             finished_at = datetime.utcnow()

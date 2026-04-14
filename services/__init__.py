@@ -111,8 +111,11 @@ class ServiceFactory:
                 if IndexService not in cls._instances:
                     qdrant_repo = RepositoryFactory.get_qdrant_repository()
                     mysql_repo = RepositoryFactory.get_mysql_repository()
+                    neo4j_repo = RepositoryFactory.get_neo4j_repository()  # GRAPH-06
                     model = cls._get_embedding_model()
-                    cls._instances[IndexService] = IndexService(qdrant_repo, mysql_repo, model)
+                    cls._instances[IndexService] = IndexService(
+                        qdrant_repo, mysql_repo, model, neo4j_repo
+                    )
         return cls._instances[IndexService]
 
     @classmethod
