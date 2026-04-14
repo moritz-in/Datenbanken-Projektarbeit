@@ -99,9 +99,13 @@ class RepositoryFactory:
                 if Neo4jRepositoryImpl not in cls._instances:
                     neo4j_user = user or current_app.config.get("NEO4J_USER", "neo4j")
                     neo4j_password = password or current_app.config.get("NEO4J_PASSWORD")
-                    cls._instances[Neo4jRepositoryImpl] = Neo4jRepositoryImpl(
-                        neo4j_uri, neo4j_user, neo4j_password
-                    )
+                    try:
+                        cls._instances[Neo4jRepositoryImpl] = Neo4jRepositoryImpl(
+                            neo4j_uri, neo4j_user, neo4j_password
+                        )
+                    except NotImplementedError:
+                        log.info("Neo4j repository not yet implemented — using NoOpNeo4jRepository")
+                        cls._instances[Neo4jRepositoryImpl] = NoOpNeo4jRepository()
         return cls._instances[Neo4jRepositoryImpl]
 
     @classmethod

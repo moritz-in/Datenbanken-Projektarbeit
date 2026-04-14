@@ -66,6 +66,11 @@ class QdrantRepository(ABC):
         """Get information about a collection"""
         pass
 
+    @abstractmethod
+    def truncate_index(self, collection_name: "Optional[str]" = None) -> None:
+        """Delete and recreate a collection (empty it completely)"""
+        pass
+
 
 class QdrantRepositoryImpl(QdrantRepository):
     """Concrete implementation of Qdrant repository"""
@@ -201,13 +206,13 @@ class QdrantRepositoryImpl(QdrantRepository):
         Returns:
             List of search results (points)
         """
-        results = self._client.search(
+        results = self._client.query_points(
             collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             with_payload=with_payload,
             search_params=SearchParams(hnsw_ef=hnsw_ef),
-        )
+        ).points
         log.debug("search: got %d hits from '%s'", len(results), collection_name)
         return results
 

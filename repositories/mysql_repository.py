@@ -88,6 +88,21 @@ class MySQLRepository(ABC):
         """Call import_product() procedure. Returns {result_code: int, result_message: str}."""
         pass
 
+    @abstractmethod
+    def load_products_for_index(
+        self, limit: "int | None" = None, include_tags: bool = True
+    ) -> "list[dict]":
+        """Load all products (with brand, category, tags) for vector indexing."""
+        pass
+
+    @abstractmethod
+    def log_etl_run(
+        self, strategy: str, products_processed: int, products_written: int,
+        started_at=None, finished_at=None, status: str = 'success', error_msg=None,
+    ) -> None:
+        """Log a completed ETL run to etl_run_log."""
+        pass
+
 
 class MySQLRepositoryImpl(MySQLRepository):
     """Concrete implementation of MySQL repository"""
@@ -358,7 +373,7 @@ class MySQLRepositoryImpl(MySQLRepository):
             List of product dictionaries with all fields
         """
         sql = """
-            SELECT p.id, p.name, p.description, p.price, p.currency,
+            SELECT p.id, p.name, p.description, p.price, 'EUR' AS currency,
                    p.sku, p.load_class, p.application,
                    b.name AS brand, c.name AS category
             FROM products p
@@ -397,7 +412,8 @@ class MySQLRepositoryImpl(MySQLRepository):
         return rows
 
     def log_etl_run(
-        self, strategy: str, products_processed: int, products_written: int
+        self, strategy: str, products_processed: int, products_written: int,
+        started_at=None, finished_at=None, status: str = 'success', error_msg=None,
     ) -> None:
         """
         Log an ETL run to etl_run_log table.
@@ -406,6 +422,10 @@ class MySQLRepositoryImpl(MySQLRepository):
             strategy: ETL strategy used (e.g., 'A', 'B', 'C')
             products_processed: Number of products processed
             products_written: Number of products written to index
+            started_at: Optional datetime when run started (defaults to NOW() in DB)
+            finished_at: Optional datetime when run finished (defaults to NOW() in DB)
+            status: Run status ('success' or 'error')
+            error_msg: Optional error message
         """
         with self._session_factory() as session:
             with session.begin():
@@ -415,13 +435,21 @@ class MySQLRepositoryImpl(MySQLRepository):
                         INSERT INTO etl_run_log
                             (strategy, started_at, finished_at,
                              products_processed, products_written, status)
-                        VALUES (:strategy, NOW(), NOW(), :proc, :written, 'success')
+                        VALUES (
+                            :strategy,
+                            COALESCE(:started_at, NOW()),
+                            COALESCE(:finished_at, NOW()),
+                            :proc, :written, :status
+                        )
                         """
                     ),
                     {
                         "strategy": strategy,
+                        "started_at": started_at,
+                        "finished_at": finished_at,
                         "proc": products_processed,
                         "written": products_written,
+                        "status": status,
                     },
                 )
 

@@ -32,7 +32,7 @@ class ServiceFactory:
 
     _instances = {}
     _shared_resources = {}
-    _lock = threading.Lock()
+    _lock = threading.RLock()
 
     @classmethod
     def reset(cls):

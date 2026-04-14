@@ -22,7 +22,7 @@ def pdf_upload():
 def upload_teaching_pdf():
     """Upload a teaching PDF to Qdrant"""
     pdf_file = request.files.get('pdf_file')
-    if not pdf_file or pdf_file.filename == '':
+    if not pdf_file or not pdf_file.filename:
         flash("Keine Datei ausgewählt", "warning")
         return redirect(url_for('pdf.pdf_upload'))
     if not pdf_file.filename.lower().endswith('.pdf'):
@@ -42,7 +42,7 @@ def upload_teaching_pdf():
 def upload_product_pdf():
     """Upload a product PDF to Qdrant"""
     pdf_file = request.files.get('pdf_file')
-    if not pdf_file or pdf_file.filename == '':
+    if not pdf_file or not pdf_file.filename:
         flash("Keine Datei ausgewählt", "warning")
         return redirect(url_for('pdf.pdf_upload'))
     if not pdf_file.filename.lower().endswith('.pdf'):
