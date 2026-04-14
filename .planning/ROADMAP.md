@@ -223,7 +223,7 @@ Plans:
 - ⚠️ **Anti-Pattern 3 (driver per request):** `Neo4jRepositoryImpl` is a `RepositoryFactory` singleton — the driver is created ONCE. Never instantiate `Neo4jRepositoryImpl` outside the factory.
 - ⚠️ **`sync_products()` not in ABC:** This method is not in the current `Neo4jRepository` ABC. Add it as an `@abstractmethod` (with `NoOpNeo4jRepository` returning `0`) so the factory pattern remains consistent.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — Neo4jRepositoryImpl core (driver init, execute_cypher, close, get_product_relationships) + teardown_appcontext (Wave 1)
@@ -266,7 +266,7 @@ Plans:
 | 1. MySQL CRUD & Transaktionen | 9 (TXN-01–08, ROUTE-01) | 3/3 | Complete | 2026-04-05 |
 | 2. MySQL DDL Features | 13 (TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02–03) | 3/3 | Complete | 2026-04-13 |
 | 3. Qdrant Vektor-Suche | 4/4 | Complete   | 2026-04-13 | - |
-| 4. Neo4j Graph & RAG | 7 (GRAPH-01–07) | 0/TBD | Not started | - |
+| 4. Neo4j Graph & RAG | 1/3 | In Progress|  | - |
 | 5. Polish & Dokumentation | 1 (DOC-01) | 0/TBD | Not started | - |
 
 **Total:** 50/50 requirements mapped ✓

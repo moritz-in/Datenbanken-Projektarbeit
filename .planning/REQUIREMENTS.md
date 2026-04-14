@@ -62,11 +62,11 @@
 
 ### A7 — Graph-DB & LLM/RAG
 
-- [ ] **GRAPH-01**: `Neo4jRepositoryImpl.get_product_relationships()` implementiert — nutzt `driver.execute_query()` mit MERGE-Pattern für Sync
-- [ ] **GRAPH-02**: `Neo4jRepositoryImpl.execute_cypher()` implementiert — generische Cypher-Ausführung
-- [ ] **GRAPH-03**: `Neo4jRepositoryImpl.close()` implementiert
+- [x] **GRAPH-01**: `Neo4jRepositoryImpl.get_product_relationships()` implementiert — nutzt `driver.execute_query()` mit MERGE-Pattern für Sync
+- [x] **GRAPH-02**: `Neo4jRepositoryImpl.execute_cypher()` implementiert — generische Cypher-Ausführung
+- [x] **GRAPH-03**: `Neo4jRepositoryImpl.close()` implementiert
 - [ ] **GRAPH-04**: Neo4j-Graph befüllt: Produkt → Brand (`MADE_BY`), Produkt → Category (`IN_CATEGORY`), Produkt → Tag (`HAS_TAG`) aus MySQL synchronisiert
-- [ ] **GRAPH-05**: `related_products`-Abfrage implementiert via Graph-Traversal: `MATCH (p)-[:MADE_BY]->(b)<-[:MADE_BY]-(other)` — Produkte desselben Herstellers finden
+- [x] **GRAPH-05**: `related_products`-Abfrage implementiert via Graph-Traversal: `MATCH (p)-[:MADE_BY]->(b)<-[:MADE_BY]-(other)` — Produkte desselben Herstellers finden
 - [ ] **GRAPH-06**: `SearchService.rag_search()` implementiert — Vektor-Suche + Graph-Anreicherung + OpenAI-LLM-Antwort (gpt-4.1-mini)
 - [ ] **GRAPH-07**: Route `rag.py` implementiert — RAG-Suchformular mit Antwortanzeige und Quellenangabe
 
@@ -147,11 +147,11 @@ Wird nach Roadmap-Erstellung befüllt.
 | VECT-06 | Phase 3 | Complete |
 | VECT-07 | Phase 3 | Complete |
 | VECT-08 | Phase 3 | Complete |
-| GRAPH-01 | Phase 4 | Pending |
-| GRAPH-02 | Phase 4 | Pending |
-| GRAPH-03 | Phase 4 | Pending |
+| GRAPH-01 | Phase 4 | Complete |
+| GRAPH-02 | Phase 4 | Complete |
+| GRAPH-03 | Phase 4 | Complete |
 | GRAPH-04 | Phase 4 | Pending |
-| GRAPH-05 | Phase 4 | Pending |
+| GRAPH-05 | Phase 4 | Complete |
 | GRAPH-06 | Phase 4 | Pending |
 | GRAPH-07 | Phase 4 | Pending |
 | ROUTE-01 | Phase 1 | Complete |

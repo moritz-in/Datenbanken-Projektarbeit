@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-13T16:38:57.990Z"
+status: Ready for Phase 4 (Neo4j Graph & RAG)
+last_updated: "2026-04-14T07:13:36.224Z"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 15
   percent: 100
 ---
 
 # STATE: Datenbanken-Projektarbeit Teil 2
 
-**Last updated:** 2026-04-13
-**Session:** Phase 3 execution complete — Qdrant Vektor-Suche (A6) all 4 plans done
+**Last updated:** 2026-04-14
+**Session:** Phase 4 Plan 01 complete — Neo4j driver layer wired
 
 ---
 
@@ -31,14 +31,14 @@ progress:
 
 ## Current Position
 
-**Active Phase:** Phase 3 — Qdrant Vektor-Suche (A6) — **Complete**
-**Active Plan:** Plan 04 complete (SearchService vector search + unified /search route)
-**Status:** Ready for Phase 4 (Neo4j Graph & RAG)
+**Active Phase:** Phase 4 — Neo4j Graph & RAG (A7) — **In Progress**
+**Active Plan:** Plan 01 complete (Neo4j driver layer)
+**Status:** Ready for Phase 4 Plan 02 (graph sync ETL + sync_products implementation)
 
 ```
-Progress: [██████████] 100%
-           [COMPLETE | COMPLETE | COMPLETE |         |         |        ]
-           [ 100%    | 100%    | 100%     |   0%    |   0%    |   0%  ]
+Progress: [█████████░] 88%
+           [COMPLETE | COMPLETE | COMPLETE | 33%     |         |        ]
+           [ 100%    | 100%    | 100%     | 1/3     |   0%    |   0%  ]
 ```
 
 ---
@@ -51,7 +51,7 @@ Progress: [██████████] 100%
 | 1 | MySQL CRUD & Transaktionen (A2) | TXN-01–08, ROUTE-01 (9 reqs) | **Complete** | 2026-04-05 |
 | 2 | MySQL DDL Features (A3, A4, A5) | TRIG-01–03, PROC-01–04, IDX-01–06, ROUTE-02, ROUTE-03, DOC-02 (16 reqs) | **Complete** | 2026-04-13 |
 | 3 | Qdrant Vektor-Suche (A6) | VECT-01–08, ROUTE-04 (9 reqs) | **Complete** | 2026-04-13 |
-| 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | Pending | - |
+| 4 | Neo4j Graph & RAG (A7) | GRAPH-01–07 (7 reqs) | **In Progress** | - |
 | 5 | Polish & Dokumentation | DOC-01 (1 req) | Pending | - |
 
 **Total requirements:** 50/50 mapped
@@ -66,9 +66,9 @@ Progress: [██████████] 100%
 | Phases complete | 2 |
 | Phases in progress | 0 |
 | Requirements mapped | 50/50 |
-| Requirements complete | 42/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02, VECT-01–08, ROUTE-04) |
-| Plans created | 14 |
-| Plans complete | 14 |
+| Requirements complete | 46/50 (FOUND-01–08, TXN-01–08, ROUTE-01, TRIG-01–03, ROUTE-02, PROC-01–04, ROUTE-03, IDX-01–06, DOC-02, VECT-01–08, ROUTE-04, GRAPH-01–03, GRAPH-05) |
+| Plans created | 17 |
+| Plans complete | 15 |
 
 ---
 | Phase 00-foundation-blockers P04 | 1min | 2 tasks | 4 files |
@@ -82,6 +82,7 @@ Progress: [██████████] 100%
 | Phase 03 P02 | 6min | 2 tasks | 2 files |
 | Phase 03 P03 | 5min | 2 tasks | 2 files |
 | Phase 03 P04 | 4min | 2 tasks | 2 files |
+| Phase 04-neo4j-graph-rag-a7 P01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Progress: [██████████] 100%
 | `build_index` Strategy C exclusively in Phase 3 | CONTEXT.md locked decision: delete+recreate before upsert; param kept for API compatibility |
 | `execute_sql_search` uses local import ServiceFactory | Avoids circular import: services/__init__.py already imports SearchService |
 | Phase 4 stubs preserved in SearchService | rag_search/pdf_rag_search/search_product_pdfs throw NotImplementedError; /search catches it → empty results (no 501) |
+| `execute_cypher` consumes Result inside `with session:` block | `session.run()` returns lazy Result; consuming outside session scope raises SessionExpiredError at call site |
+| `teardown_appcontext` (not `teardown_request`) for Neo4j close | teardown_request fires on every HTTP request; teardown_appcontext fires on app context teardown (shutdown only) |
+| `sync_products` added as `@abstractmethod` in Plan 01 (not Plan 02) | ABC contract must be satisfied immediately; NoOpNeo4jRepository returns 0 as graceful fallback |
 
 ### Known Risks
 
@@ -148,53 +152,27 @@ Progress: [██████████] 100%
 
 ### What Was Done This Session
 
-- Executed Phase 3 Plan 01: QdrantRepositoryImpl core methods fully implemented
-  - ensure_collection (idempotent), delete_collection (404-safe), count (returns 0 if absent)
-  - upsert_points (ensure_collection first, wait=True, .tolist() guard), search (SearchParams), scroll (pagination)
-  - get_collection_info (returns dict with safe defaults), truncate_index, get_unique_sources
-  - PDF methods: extract_pdf_chunks (@staticmethod, pdfplumber), upload_pdf_chunks (uuid IDs), get_pdf_counts, list_uploaded_pdfs
-  - VECT-01, VECT-02, VECT-03, VECT-05 satisfied
-
-- Executed Phase 3 Plan 02: IndexService ETL pipeline + /index route
-  - product_to_document: structured labels, skip None/empty, never "None" in output
-  - build_index: Strategy C delete+recreate, batch embed, upsert, log_etl_run on success/error
-  - get_index_status, truncate_index, get_collection_info implemented
-  - GET /index, POST /index (PRG), POST /truncate-index (PRG) all working
-  - VECT-06, VECT-07, VECT-08 satisfied
-
-- Executed Phase 3 Plan 03: PDFService + PDF routes
-  - PDFService: upload_pdf_to_qdrant, upload_product_pdf, get_pdf_counts, list_*_pdfs, ensure_collections
-  - GET /pdf-upload, POST /upload-teaching-pdf, POST /upload-product-pdf, GET /api/pdf-stats
-  - VECT-04, ROUTE-04 satisfied
-
-- Executed Phase 3 Plan 04: SearchService + unified /search route
-  - vector_search: embed query, search Qdrant, map ScoredPoint→dict
-  - execute_sql_search: local import ServiceFactory → delegates to ProductService
-  - _coerce_int/_coerce_ints helper methods implemented
-  - Phase 4 stubs preserved (rag_search, pdf_rag_search, search_product_pdfs, _generate_llm_answer)
-  - GET/POST /search: 6-type dispatch, NotImplementedError caught for Phase 4 tabs (no 501)
-  - VECT-07, VECT-08 (via search route) satisfied; Phase 3 COMPLETE
-
-- Deviation found: docker-compose.override.yml bind mounts not active → container recreated with --force-recreate to pick up all file changes
+- Executed Phase 4 Plan 01: Neo4j driver layer wired
+  - Neo4jRepositoryImpl.__init__ connects via GraphDatabase.driver() + verify_connectivity()
+  - execute_cypher: session.run consuming Result inside `with session:` block → returns list[dict]
+  - close(): sets self._driver = None; safe for double-close
+  - get_product_relationships: MATCH/OPTIONAL MATCH Cypher → {mysql_id: {title, brand, category, tags, related_products}}
+  - sync_products added as @abstractmethod to Neo4jRepository ABC
+  - NoOpNeo4jRepository.sync_products([]) returns 0
+  - __enter__/__exit__ stubs replaced with real context manager delegation to close()
+  - teardown_appcontext hook _close_neo4j(exception=None) registered in create_app() after blueprint block
+  - GRAPH-01, GRAPH-02, GRAPH-03, GRAPH-05 satisfied
 
 ### What to Do Next
 
-1. Start Phase 4 — Neo4j Graph & RAG (A7): graph sync, RAG search (GRAPH-01–07)
-2. Phase 3 ALL plans complete — VECT-01–08, ROUTE-04 satisfied
+1. Phase 4 Plan 02 — implement Neo4jRepositoryImpl.sync_products + graph ETL route (GRAPH-04, GRAPH-06)
+2. Phase 4 Plan 03 — RAG search with Neo4j context enrichment (GRAPH-07)
 
 ### Files Written This Session
 
-- `repositories/qdrant_repository.py` — QdrantRepositoryImpl fully implemented (all stubs replaced)
-- `services/index_service.py` — IndexService ETL pipeline fully implemented
-- `services/pdf_service.py` — PDFService fully implemented
-- `services/search_service.py` — SearchService Phase 3 methods implemented
-- `routes/index.py` — /index GET/POST + /truncate-index POST
-- `routes/pdf.py` — /pdf-upload GET + upload routes POST + /api/pdf-stats GET
-- `routes/search.py` — /search unified handler (6 types)
-- `.planning/phases/03-qdrant-vektor-suche-a6/03-01-SUMMARY.md`
-- `.planning/phases/03-qdrant-vektor-suche-a6/03-02-SUMMARY.md`
-- `.planning/phases/03-qdrant-vektor-suche-a6/03-03-SUMMARY.md`
-- `.planning/phases/03-qdrant-vektor-suche-a6/03-04-SUMMARY.md`
+- `repositories/neo4j_repository.py` — Neo4jRepositoryImpl fully wired; ABC extended with sync_products
+- `app.py` — teardown_appcontext hook registered
+- `.planning/phases/04-neo4j-graph-rag-a7/04-01-SUMMARY.md`
 
 ---
 
