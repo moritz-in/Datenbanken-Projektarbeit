@@ -79,7 +79,7 @@
 
 ### Dokumentation
 
-- [ ] **DOC-01**: `COMPARISON.md` erstellt — konzeptuelle Gegenüberstellung SQL vs. Vektor-Suche vs. Graph+RAG mit konkreten Beispielen: 3 Queries × 3 Suchmethoden mit echten Produktkatalog-Ergebnissen
+- [x] **DOC-01**: `COMPARISON.md` erstellt — konzeptuelle Gegenüberstellung SQL vs. Vektor-Suche vs. Graph+RAG mit konkreten Beispielen: 3 Queries × 3 Suchmethoden mit echten Produktkatalog-Ergebnissen
 - [x] **DOC-02**: B-Baum-Analyse-Dokument mit EXPLAIN-Screenshots/Output (abgedeckt durch IDX-05/IDX-06)
 
 ## v2 Requirements
@@ -158,7 +158,7 @@ Wird nach Roadmap-Erstellung befüllt.
 | ROUTE-02 | Phase 2 | Complete |
 | ROUTE-03 | Phase 2 | Complete |
 | ROUTE-04 | Phase 3 | Complete |
-| DOC-01 | Phase 5 | Pending |
+| DOC-01 | Phase 5 | Complete |
 | DOC-02 | Phase 2 | Complete |
 
 **Coverage:**
