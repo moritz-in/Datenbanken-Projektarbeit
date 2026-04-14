@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 04-neo4j-graph-rag-a7
 source: [04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md]
 started: 2026-04-14T00:00:00Z
@@ -69,7 +69,15 @@ skipped: 0
   reason: "User reported: grep -i neo4j returned no output; log file shows: build_index: Neo4j sync failed (non-fatal): 'NoneType' object has no attribute 'session'"
   severity: major
   test: 7
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "teardown_appcontext fires after every HTTP request (not just shutdown), calling close() which sets _driver=None. RepositoryFactory never recreates the broken singleton. Every subsequent sync_products call hits NoneType on self._driver.session()"
+  artifacts:
+    - path: "app.py"
+      issue: "_close_neo4j registered with teardown_appcontext — fires per-request, destroys driver after every request"
+    - path: "repositories/neo4j_repository.py"
+      issue: "close() sets self._driver = None with no reconnect path — instance permanently broken after first call"
+    - path: "repositories/__init__.py"
+      issue: "Singleton cache never evicts or recreates the broken instance — dead instance returned forever"
+  missing:
+    - "Remove teardown_appcontext hook (or replace with atexit/shutdown signal) — Neo4j driver is a long-lived singleton, not per-request"
+    - "Add lazy-reconnect guard in execute_cypher(): if self._driver is None, reconnect before proceeding"
+  debug_session: ".planning/debug/neo4j-driver-null-after-teardown.md"
