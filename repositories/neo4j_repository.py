@@ -29,6 +29,11 @@ class Neo4jRepository(ABC):
         """Close the Neo4j driver connection"""
         pass
 
+    @abstractmethod
+    def sync_products(self, products: list[dict]) -> int:
+        """Sync products to Neo4j graph. Returns count of products processed."""
+        pass
+
 
 class NoOpNeo4jRepository(Neo4jRepository):
     """No-op repository used when Neo4j is not configured."""
@@ -45,6 +50,10 @@ class NoOpNeo4jRepository(Neo4jRepository):
         log.debug("NoOpNeo4jRepository.close called (Neo4j not configured)")
         pass
 
+    def sync_products(self, products: list[dict]) -> int:
+        log.debug("NoOpNeo4jRepository.sync_products called (Neo4j not configured)")
+        return 0
+
 
 class Neo4jRepositoryImpl(Neo4jRepository):
     """Concrete implementation of Neo4j repository"""
@@ -58,7 +67,34 @@ class Neo4jRepositoryImpl(Neo4jRepository):
             user: Neo4j username
             password: Neo4j password
         """
-        raise NotImplementedError("TODO: implement Neo4j repository initialization.")
+        self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self._driver.verify_connectivity()
+        log.info("Neo4j driver connected to %s", uri)
+
+    def execute_cypher(self, query: str, parameters: Optional[dict] = None) -> list:
+        """
+        Execute a raw Cypher query.
+
+        Args:
+            query: Cypher query string
+            parameters: Optional query parameters
+
+        Returns:
+            List of result records as dicts (consumed inside session block)
+
+        Raises:
+            Exception: On query execution errors
+        """
+        with self._driver.session(database="neo4j") as session:
+            result = session.run(query, parameters or {})
+            return [dict(r) for r in result]  # MUST consume inside with block
+
+    def close(self) -> None:
+        """Close the Neo4j driver connection"""
+        if self._driver is not None:
+            self._driver.close()
+            self._driver = None
+            log.info("Neo4j driver closed")
 
     def get_product_relationships(self, mysql_ids: list[int]) -> dict[int, dict]:
         """
@@ -71,7 +107,7 @@ class Neo4jRepositoryImpl(Neo4jRepository):
             mysql_ids: List of MySQL product IDs
 
         Returns:
-            Dictionary mapping mysql_id to enrichment data (title, brand, category, tags)
+            Dictionary mapping mysql_id to enrichment data (title, brand, category, tags, related_products)
 
         Example:
             {
@@ -79,32 +115,54 @@ class Neo4jRepositoryImpl(Neo4jRepository):
                     "title": "Product Name",
                     "brand": "Brand Name",
                     "category": "Category Name",
-                    "tags": ["tag1", "tag2"]
+                    "tags": ["tag1", "tag2"],
+                    "related_products": ["Other Product"]
                 },
                 ...
             }
         """
-        raise NotImplementedError("TODO: implement Neo4j relationships query.")
-
-    def execute_cypher(self, query: str, parameters: Optional[dict] = None) -> list:
+        if not mysql_ids:
+            return {}
+        cypher = """
+        MATCH (p:Product)
+        WHERE p.mysql_id IN $ids
+        OPTIONAL MATCH (p)-[:MADE_BY]->(b:Brand)
+        OPTIONAL MATCH (p)-[:IN_CATEGORY]->(c:Category)
+        OPTIONAL MATCH (p)-[:HAS_TAG]->(t:Tag)
+        OPTIONAL MATCH (p)-[:MADE_BY]->(b2:Brand)<-[:MADE_BY]-(other:Product)
+        WHERE other.mysql_id <> p.mysql_id
+        RETURN p.mysql_id AS mysql_id,
+               p.name AS title,
+               b.name AS brand,
+               c.name AS category,
+               collect(DISTINCT t.name) AS tags,
+               collect(DISTINCT other.name)[0..3] AS related_products
         """
-        Execute a raw Cypher query.
+        rows = self.execute_cypher(cypher, {"ids": mysql_ids})
+        result = {}
+        for row in rows:
+            mid = row.get("mysql_id")
+            if mid is not None:
+                result[int(mid)] = {
+                    "title": row.get("title", ""),
+                    "brand": row.get("brand", ""),
+                    "category": row.get("category", ""),
+                    "tags": row.get("tags") or [],
+                    "related_products": row.get("related_products") or [],
+                }
+        return result
+
+    def sync_products(self, products: list[dict]) -> int:
+        """
+        Sync products to Neo4j graph. Returns count of products processed.
 
         Args:
-            query: Cypher query string
-            parameters: Optional query parameters
+            products: List of product dicts with keys: id, name, brand, category, tags
 
         Returns:
-            List of result records
-
-        Raises:
-            Exception: On query execution errors
+            Count of products successfully synced
         """
-        raise NotImplementedError("TODO: implement Cypher execution.")
-
-    def close(self) -> None:
-        """Close the Neo4j driver connection"""
-        raise NotImplementedError("TODO: implement Neo4j close.")
+        raise NotImplementedError("TODO: implement sync_products in Phase 4 Plan 02.")
 
     # ======================
     # High-level operations
@@ -190,8 +248,9 @@ class Neo4jRepositoryImpl(Neo4jRepository):
 
     def __enter__(self):
         """Context manager entry"""
-        raise NotImplementedError("TODO: implement context manager entry.")
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit - closes connection"""
-        raise NotImplementedError("TODO: implement context manager exit.")
+        self.close()
+        return False
