@@ -73,8 +73,12 @@ class ServiceFactory:
                 if 'llm_client' not in cls._shared_resources:
                     api_key = current_app.config.get("OPENAI_API_KEY")
                     if api_key:
-                        cls._shared_resources['llm_client'] = OpenAI(api_key=api_key)
-                        log.info("OpenAI client initialized")
+                        base_url = current_app.config.get("OPENAI_BASE_URL") or None
+                        cls._shared_resources['llm_client'] = OpenAI(
+                            api_key=api_key,
+                            base_url=base_url,
+                        )
+                        log.info("OpenAI client initialized (base_url=%s)", base_url or "default")
                     else:
                         cls._shared_resources['llm_client'] = None
                         log.info("OPENAI_API_KEY not configured; LLM client is None")

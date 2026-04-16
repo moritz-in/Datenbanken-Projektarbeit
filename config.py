@@ -34,6 +34,7 @@ class Config:
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     EMBEDDING_DIM = _int_env("EMBEDDING_DIM", 384)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
     LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4.1-mini")
 
     # Neo4j
