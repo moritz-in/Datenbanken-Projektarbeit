@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
 status: completed
-last_updated: "2026-05-10T11:02:12Z"
+last_updated: "2026-05-10T12:00:38Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -15,7 +15,7 @@ progress:
 # STATE: Datenbanken-Projektarbeit Teil 2
 
 **Last updated:** 2026-05-10
-**Session:** Quick task 2 complete — SQL/Doku-Abgabeartefakte auf Konsistenz geprueft und zusammengefasst
+**Session:** Quick task 3 complete — repo-basierten Live-Demo-Leitfaden fuer die 15-Minuten-Praesentation erstellt
 
 ---
 
@@ -94,6 +94,7 @@ Progress: [██████████] 100%
 |---|-------------|------|--------|-----------|
 | 1 | Vergleichsanalyse und kritische Reflexion gegen Abgabekriterien geprueft und abgabebereit gemacht | 2026-05-10 | cd2f542 | [1-pruefe-die-vergleichsanalyse-und-kritisc](./quick/1-pruefe-die-vergleichsanalyse-und-kritisc/) |
 | 2 | Abgaberelevante SQL- und Doku-Artefakte auf Widersprueche geprueft und als konsistentes Paket dokumentiert | 2026-05-10 | 7be0671 | [2-pruefe-und-behebe-gemeldete-abgabeproble](./quick/2-pruefe-und-behebe-gemeldete-abgabeproble/) |
+| 3 | Live-Demo-Leitfaden mit Startcheck, 15-Minuten-Ablauf, Bewertungsmatrix und ehrlichen Fallbacks erstellt | 2026-05-10 | a45b036 | [3-kannst-du-mir-jetzt-erklaeren-was-alles-](./quick/3-kannst-du-mir-jetzt-erklaeren-was-alles-/) |
 
 ## Accumulated Context
 
@@ -168,10 +169,10 @@ Progress: [██████████] 100%
 
 ### What Was Done This Session
 
-- Executed quick task 2: verified the submission SQL and documentation package against the existing plan
-  - confirmed `schema.sql` and `mysql-init/01-schema.sql` stay synchronized
-  - re-ran all three automated plan checks plus a final cross-file consistency scan
-  - documented the verified task commits in `.planning/quick/2-pruefe-und-behebe-gemeldete-abgabeproble/2-SUMMARY.md`
+- Executed quick task 3: created a practical live-demo guide for the 15-minute presentation
+  - documented exact startup command, ports, routes, and visible proof points for the running app
+  - added a timed presenter script tied to the real `Routes → Services → Repositories` architecture
+  - mapped grading criteria to repo artifacts, live click paths, and fallback wording in `.planning/quick/3-kannst-du-mir-jetzt-erklaeren-was-alles-/3-DEMO-GUIDE.md`
 
 ### What to Do Next
 
@@ -179,7 +180,8 @@ Progress: [██████████] 100%
 
 ### Files Written This Session
 
-- `.planning/quick/2-pruefe-und-behebe-gemeldete-abgabeproble/2-SUMMARY.md`
+- `.planning/quick/3-kannst-du-mir-jetzt-erklaeren-was-alles-/3-DEMO-GUIDE.md`
+- `.planning/quick/3-kannst-du-mir-jetzt-erklaeren-was-alles-/3-SUMMARY.md`
 - `.planning/STATE.md` — updated quick-task log and session context
 
 ---
