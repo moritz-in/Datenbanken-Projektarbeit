@@ -74,6 +74,32 @@ Wichtig:
 - das Skript erwartet die CSV-Dateien in `data/`
 - aus dem Repo-Root gestartet werden `data/brands.csv`, `data/categories.csv`, `data/tags.csv`, `data/products_extended.csv`, `data/products_500_new.csv` und `data/product_tags.csv` korrekt gefunden
 
+### 3a. Daten ueber Adminer importieren (Docker)
+
+Wenn du den Import in Adminer ausfuehren willst, nutze **nicht** `import.sql`, sondern `import_adminer.sql`.
+
+Grund:
+
+- `import.sql` verwendet `LOAD DATA LOCAL INFILE` und erwartet die CSV-Dateien auf der Client-Seite
+- Adminer ist ein anderer Client und blockiert `LOCAL INFILE` haeufig aus Sicherheitsgruenden
+- fuer Docker ist `./data` bereits in den MySQL-Container unter `/csv` gemountet
+- `import_adminer.sql` nutzt deshalb serverseitiges `LOAD DATA INFILE '/csv/...` und funktioniert damit direkt im laufenden Docker-Setup
+
+Vorgehen in Adminer:
+
+1. In Adminer bei Datenbank `productdb` anmelden
+2. Sicherstellen, dass das Schema bereits existiert
+3. `import_adminer.sql` im Import-Dialog auswaehlen
+4. Import starten
+
+Danach sollten laut Validierung vorhanden sein:
+
+- `brands`: 5
+- `categories`: 4
+- `tags`: 5
+- `products`: 1000
+- `product_tags`: 995
+
 ### 4. Datenbank verifizieren
 
 ```bash
@@ -101,7 +127,7 @@ Exponierte Services:
 - Neo4j Web UI: `http://localhost:7484`
 - Neo4j Bolt: `bolt://localhost:7697`
 
-Hinweis: Beim Docker-Start wird nur `mysql-init/` automatisch eingespielt. Der separate CSV-Vollimport bleibt bewusst in `import.sql`, damit er als eigenes Abgabeartefakt nachvollziehbar bleibt. Fuer die Wartbarkeit sind `schema.sql` und `mysql-init/01-schema.sql` identisch; `trigger.sql`/`procedure.sql` und `mysql-init/02-triggers.sql`/`mysql-init/03-procedures.sql` beschreiben dieselbe DDL fuer zwei unterschiedliche Einstiegswege (Abgabe vs. Container-Init).
+Hinweis: Beim Docker-Start wird nur `mysql-init/` automatisch eingespielt. Der separate CSV-Vollimport bleibt bewusst als eigenes Artefakt nachvollziehbar. Fuer die Wartbarkeit sind `schema.sql` und `mysql-init/01-schema.sql` identisch; `trigger.sql`/`procedure.sql` und `mysql-init/02-triggers.sql`/`mysql-init/03-procedures.sql` beschreiben dieselbe DDL fuer zwei unterschiedliche Einstiegswege (Abgabe vs. Container-Init). Fuer den CSV-Import gibt es zwei passende Wege: `import.sql` fuer MySQL-CLI mit `LOCAL INFILE` und `import_adminer.sql` fuer Adminer/Docker mit serverseitigem `INFILE` aus `/csv`.
 
 ---
 
