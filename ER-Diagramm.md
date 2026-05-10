@@ -1,273 +1,169 @@
 # ER-Diagramm: Produktdatenbank
 
-## Übersicht der Entitäten und Beziehungen
+## Zweck
+
+Dieses Dokument beschreibt das relationale Kernmodell der Abgabe. Es orientiert sich an der finalen DDL in `schema.sql` und verwendet dieselben Tabellennamen wie die laufende Anwendung und die Docker-Initialisierung.
+
+---
+
+## Kernmodell als Mermaid-ER-Diagramm
 
 ```mermaid
 erDiagram
-    BRAND ||--o{ PRODUCT : "stellt_her"
-    CATEGORY ||--o{ PRODUCT : "kategorisiert"
-    PRODUCT }o--o{ TAG : "hat"
+    brands ||--o{ products : "stellt her"
+    categories ||--o{ products : "klassifiziert"
+    products ||--o{ product_tags : "hat"
+    tags ||--o{ product_tags : "wird zugeordnet"
+    products ||--o{ product_change_log : "wird protokolliert in"
 
-    BRAND {
-        int id PK "Primary Key"
-        string name UK "Markenname - UNIQUE"
+    brands {
+        int id PK
+        varchar name UK
     }
 
-    CATEGORY {
-        int id PK "Primary Key"
-        string name UK "Kategoriename - UNIQUE"
+    categories {
+        int id PK
+        varchar name UK
     }
 
-    TAG {
-        int id PK "Primary Key"
-        string name UK "Tag-Bezeichnung - UNIQUE"
+    tags {
+        int id PK
+        varchar name UK
     }
 
-    PRODUCT {
-        int id PK "Primary Key"
-        string name "Produktname"
-        text description "Produktbeschreibung"
-        int brand_id FK "Foreign Key zu BRAND - NOT NULL"
-        int category_id FK "Foreign Key zu CATEGORY - NOT NULL"
-        decimal price "Preis in EUR - CHECK price >= 0"
-        string load_class "Belastungsklasse - high, medium, low"
-        string application "Anwendungsbereich - precision, automotive, industrial"
-        string temperature_range "Temperaturbereich - z.B. -40–200°C"
+    products {
+        int id PK
+        varchar name
+        text description
+        int brand_id FK
+        int category_id FK
+        decimal price
+        varchar sku UK
+        varchar load_class
+        varchar application
+        varchar temperature_range
+    }
+
+    product_tags {
+        int product_id PK, FK
+        int tag_id PK, FK
+    }
+
+    product_change_log {
+        int id PK
+        int product_id FK
+        datetime changed_at
+        varchar field_name
+        text old_value
+        text new_value
+        varchar changed_by
     }
 ```
 
-## Dateiübersicht
+---
 
-Die Datenbank besteht aus **4 CSV-Dateien**:
+## Tabellenuebersicht
 
-1. **brand.csv** - Markenstammdaten (5 Einträge)
-2. **category.csv** - Kategoriestammdaten (4 Einträge)
-3. **tag.csv** - Tag-Stammdaten (5 Einträge)
-4. **product.csv** - Produktdaten mit allen Attributen (1000 Einträge)
+### Kernentitaeten
 
-## Beziehungsbeschreibungen
+| Tabelle | Rolle | Wichtige Attribute |
+|---------|-------|--------------------|
+| `brands` | Herstellerstamm | `id`, `name` |
+| `categories` | Produktkategorien | `id`, `name` |
+| `tags` | Schlagwoerter fuer Kontext und Suche | `id`, `name` |
+| `products` | zentrales Produktobjekt | `id`, `name`, `description`, `brand_id`, `category_id`, `price`, `sku`, `load_class`, `application`, `temperature_range` |
+| `product_tags` | M:N-Junction zwischen Produkten und Tags | `product_id`, `tag_id` |
 
-### 1:N Beziehungen (One-to-Many)
+### Operative Zusatztabellen
 
-- **BRAND → PRODUCT**: Eine Marke kann mehrere Produkte herstellen (1:N)
-  - Jedes Produkt muss genau einer Marke zugeordnet sein (NOT NULL Constraint)
-  
-- **CATEGORY → PRODUCT**: Eine Kategorie kann mehrere Produkte enthalten (1:N)
-  - Jedes Produkt muss genau einer Kategorie zugeordnet sein (NOT NULL Constraint)
+| Tabelle | Zweck |
+|---------|-------|
+| `product_change_log` | wird vom MySQL-Trigger fuer A3 automatisch befuellt |
+| `etl_run_log` | protokolliert Index-Builds fuer Qdrant |
 
-### M:N Beziehung (Many-to-Many)
+`etl_run_log` gehoert nicht zum fachlichen Kern-ER-Modell der Produktdaten, ist aber Teil des gelieferten relationalen Schemas.
 
-- **PRODUCT ↔ TAG**: Ein Produkt kann mehrere Tags haben und ein Tag kann mehreren Produkten zugeordnet sein (M:N)
-  - Die M:N-Beziehung wird direkt durch die Datenbank-Implementierung (z.B. Junction-Table) realisiert
-  - Ein Produkt kann 0 bis mehrere Tags haben
-  - Ein Tag kann 0 bis mehreren Produkten zugeordnet sein
+---
 
-## Detaillierte Entitätsbeschreibungen
+## Beziehungen und Kardinalitaeten
 
-### BRAND (brand.csv)
-**Datensätze:** 5  
-**Inhalt:** Lagerhersteller
+### 1:N-Beziehungen
 
-| Attribut | Typ | Constraints | Beschreibung |
-|----------|-----|-------------|--------------|
-| id | INTEGER | PRIMARY KEY | Eindeutige Marken-ID |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | Markenname |
+- `brands (1) -> (N) products`
+  - jedes Produkt gehoert genau zu einer Marke
+  - geloescht wird per `ON DELETE RESTRICT` verhindert, solange Produkte referenzieren
 
-**Beispieldaten:**
+- `categories (1) -> (N) products`
+  - jedes Produkt gehoert genau zu einer Kategorie
+  - auch hier sichert `ON DELETE RESTRICT` die referentielle Integritaet
 
-| ID | Name |
-|----|------|
-| 1 | SKF |
-| 2 | FAG |
-| 3 | Schaeffler |
-| 4 | INA |
-| 5 | NSK |
+- `products (1) -> (N) product_change_log`
+  - jede Aenderung an einem Produkt kann mehrere Logeintraege erzeugen
+  - die Tabelle wird nicht von Hand gepflegt, sondern vom Trigger `trg_products_after_update`
 
-### CATEGORY (category.csv)
-**Datensätze:** 4  
-**Inhalt:** Produktkategorien
+### M:N-Beziehung
 
-| Attribut | Typ | Constraints | Beschreibung |
-|----------|-----|-------------|--------------|
-| id | INTEGER | PRIMARY KEY | Eindeutige Kategorie-ID |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | Kategoriename |
+- `products (N) <-> (N) tags`
+  - technisch umgesetzt ueber die Junction-Tabelle `product_tags`
+  - `PRIMARY KEY (product_id, tag_id)` verhindert doppelte Zuordnungen
+  - `ON DELETE CASCADE` entfernt Zuordnungen automatisch, wenn Produkt oder Tag geloescht wird
 
-**Beispieldaten:**
+---
 
-| ID | Name |
-|----|------|
-| 1 | Wälzlager |
-| 2 | Dichtungen |
-| 3 | Kugellager |
-| 4 | Rollenlager |
+## Importquellen und Datenmengen
 
-### TAG (tag.csv)
-**Datensätze:** 5  
-**Inhalt:** Beschreibende Schlagwörter
+Der relationale Vollimport verwendet die folgenden CSV-Dateien aus `data/`:
 
-| Attribut | Typ | Constraints | Beschreibung |
-|----------|-----|-------------|--------------|
-| id | INTEGER | PRIMARY KEY | Eindeutige Tag-ID |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | Tag-Bezeichnung |
+| Datei | Inhalt | Erwartete Zeilen |
+|-------|--------|------------------|
+| `brands.csv` | Markenstammdaten | 5 |
+| `categories.csv` | Kategorien | 4 |
+| `tags.csv` | Tags | 5 |
+| `products_extended.csv` | Produktbatch 1 (IDs 1-500) | 500 |
+| `products_500_new.csv` | Produktbatch 2 (IDs 501-1000) | 500 |
+| `product_tags.csv` | M:N-Zuordnungen | 995 |
 
-**Beispieldaten:**
+Die Importlogik dafuer liegt in `import.sql`.
 
-| ID | Name |
-|----|------|
-| 1 | Industrie |
-| 2 | Automotive |
-| 3 | Premium |
-| 4 | Heavy Duty |
-| 5 | OEM |
+---
 
-### PRODUCT (product.csv)
-**Datensätze:** 1000  
-**Inhalt:** Alle Produkte mit vollständigen Attributen
+## Integritaetsregeln
 
-| Attribut | Typ | Constraints | Beschreibung |
-|----------|-----|-------------|--------------|
-| id | INTEGER | PRIMARY KEY | Eindeutige Produkt-ID |
-| name | VARCHAR(255) | NOT NULL | Produktbezeichnung |
-| description | TEXT | | Detaillierte Produktbeschreibung |
-| brand_id | INTEGER | FOREIGN KEY → brand(id), NOT NULL | Referenz zur Marke |
-| category_id | INTEGER | FOREIGN KEY → category(id), NOT NULL | Referenz zur Kategorie |
-| price | DECIMAL(10,2) | NOT NULL, CHECK (price >= 0) | Preis in EUR |
-| load_class | VARCHAR(50) | | Belastungsklasse: high, medium, low |
-| application | VARCHAR(50) | | Anwendungsbereich: precision, automotive, industrial |
-| temperature_range | VARCHAR(50) | | Betriebstemperatur (z.B. -40–200°C) |
+### Schluessel und Constraints
 
-**Beispieldaten:**
-- IDs: 1-1000
-- Produktnamen: z.B. "SKF WIE-5012", "FAG ROL-3456 (Variante B)"
-- Preise: 50.00 - 450.00 EUR
-- Alle Produkte haben technische Spezifikationen (load_class, application, temperature_range)
+- `brands.name`, `categories.name` und `tags.name` sind eindeutig
+- `products.sku` ist eindeutig, falls gesetzt
+- `products.price >= 0`
+- `products.name` darf nicht leer sein
+- `products.load_class` ist auf `high`, `medium`, `low` begrenzt
+- `products.application` ist auf `precision`, `automotive`, `industrial` begrenzt
 
-## Datenmengen
+### Fremdschluessel
 
-| Tabelle | Datensätze | Datei |
-|---------|-----------|-------|
-| BRAND | 5 | brand.csv |
-| CATEGORY | 4 | category.csv |
-| TAG | 5 | tag.csv |
-| PRODUCT | 1000 | product.csv |
-| **Gesamt** | **1.014** | **4 Dateien** |
+| Tabelle | Spalte | Referenz |
+|---------|--------|----------|
+| `products` | `brand_id` | `brands.id` |
+| `products` | `category_id` | `categories.id` |
+| `product_tags` | `product_id` | `products.id` |
+| `product_tags` | `tag_id` | `tags.id` |
+| `product_change_log` | `product_id` | `products.id` |
 
-## Kardinalitäten Legende
+---
 
-- `||--o{` = Eins zu Viele (1:N)
-  - Genau ein Datensatz auf der linken Seite
-  - Null bis viele Datensätze auf der rechten Seite
-- `}o--o{` = Viele zu Viele (M:N)
-  - Null bis viele Datensätze auf beiden Seiten
-  
-**Beispiele:**
-- Ein BRAND hat viele PRODUCTs
-- Eine CATEGORY hat viele PRODUCTs
-- Ein PRODUCT gehört zu genau einem BRAND (NOT NULL)
-- Ein PRODUCT gehört zu genau einer CATEGORY (NOT NULL)
-- Ein PRODUCT kann mehrere TAGs haben (M:N)
-- Ein TAG kann mehreren PRODUCTs zugeordnet sein (M:N)
+## 3NF-Einordnung
 
-## Datenbankdesign-Hinweise
+Das Kernmodell erfuellt die 3. Normalform:
 
-### Normalisierung (3NF erreicht)
+- Stammdaten fuer Marken, Kategorien und Tags sind ausgelagert
+- `products` enthaelt nur Attribute, die direkt vom Produktschluessel abhaengen
+- die M:N-Beziehung wird sauber ueber `product_tags` modelliert
+- redundante Mehrfachspeicherung von Marken- oder Kategorienamen in `products` wird vermieden
 
-Das Schema erfüllt die **3. Normalform (3NF)**:
+---
 
-**1. Normalform (1NF):**
-- ✓ Alle Attribute sind atomar (keine Listen oder Arrays)
-- ✓ Jede Zelle enthält nur einen Wert
-- ✓ Jede Zeile ist eindeutig identifizierbar durch Primary Key
+## Bezug zu den weiteren Artefakten
 
-**2. Normalform (2NF):**
-- ✓ 1NF ist erfüllt
-- ✓ Alle Nicht-Schlüssel-Attribute sind voll funktional abhängig vom Primary Key
-- ✓ Keine partiellen Abhängigkeiten (alle PKs sind einzelne Attribute)
-
-**3. Normalform (3NF):**
-- ✓ 2NF ist erfüllt
-- ✓ Keine transitiven Abhängigkeiten
-- ✓ Stammdaten (BRAND, CATEGORY, TAG) sind in separate Tabellen ausgelagert
-- ✓ Keine redundanten Daten - Marken- und Kategorienamen werden nur einmal gespeichert
-
-### Referenzielle Integrität
-
-Alle Foreign Keys sind korrekt definiert und gewährleisten Datenintegrität:
-
-| Foreign Key | Referenziert | Constraint |
-|-------------|--------------|------------|
-| product.brand_id | brand.id | NOT NULL, ON DELETE RESTRICT |
-| product.category_id | category.id | NOT NULL, ON DELETE RESTRICT |
-
-**Integritätsregeln:**
-- Ein Produkt muss immer eine gültige Marke haben (NOT NULL)
-- Ein Produkt muss immer eine gültige Kategorie haben (NOT NULL)
-- Marken und Kategorien können nicht gelöscht werden, wenn noch Produkte darauf verweisen (RESTRICT)
-- Die M:N-Beziehung zwischen PRODUCT und TAG wird durch eine Junction-Tabelle realisiert
-
-### Constraints und Datenintegrität
-
-**Primary Keys:**
-- Jede Tabelle hat einen eindeutigen PRIMARY KEY (id)
-- Auto-Increment für neue Datensätze
-
-**Unique Constraints:**
-- brand.name: UNIQUE (keine doppelten Markennamen)
-- category.name: UNIQUE (keine doppelten Kategorienamen)
-- tag.name: UNIQUE (keine doppelten Tag-Namen)
-
-**NOT NULL Constraints:**
-- Alle Primary Keys
-- brand.name, category.name, tag.name
-- product.name, product.brand_id, product.category_id, product.price
-
-**Check Constraints:**
-- product.price >= 0 (keine negativen Preise)
-
-**Optionale Felder:**
-- product.description (kann NULL sein)
-- product.load_class (kann NULL sein)
-- product.application (kann NULL sein)
-- product.temperature_range (kann NULL sein)
-
-### Datentypen
-
-| Attribut | Datentyp | Begründung |
-|----------|----------|------------|
-| id (alle Tabellen) | INTEGER | Effizient für Primary Keys |
-| name (BRAND, CATEGORY, TAG) | VARCHAR(100) | Feste maximale Länge für Namen |
-| product.name | VARCHAR(255) | Längere Produktbezeichnungen möglich |
-| product.description | TEXT | Unbegrenzte Textlänge für Beschreibungen |
-| product.price | DECIMAL(10,2) | Präzise Währungsangaben (bis 99.999.999,99) |
-| product.load_class | VARCHAR(50) | Enum-ähnliche Werte |
-| product.application | VARCHAR(50) | Enum-ähnliche Werte |
-| product.temperature_range | VARCHAR(50) | Flexible Temperaturangaben |
-
-### Indexierung (Empfohlen)
-
-Für optimale Performance sollten folgende Indizes erstellt werden:
-
-```sql
--- Primary Keys (automatisch indiziert)
--- BRAND(id), CATEGORY(id), TAG(id), PRODUCT(id)
-
--- Foreign Keys (für JOIN-Performance)
-CREATE INDEX idx_product_brand ON product(brand_id);
-CREATE INDEX idx_product_category ON product(category_id);
-
--- Unique Constraints (automatisch indiziert)
--- BRAND(name), CATEGORY(name), TAG(name)
-
--- Suchfelder
-CREATE INDEX idx_product_name ON product(name);
-CREATE INDEX idx_product_price ON product(price);
-```
-
-### Skalierbarkeit
-
-Das Design ist skalierbar und erweiterbar:
-- ✓ Neue Marken, Kategorien und Tags können einfach hinzugefügt werden
-- ✓ Unbegrenzte Anzahl von Produkten möglich
-- ✓ M:N-Beziehung zwischen PRODUCT und TAG erlaubt flexible Verschlagwortung
-- ✓ Zusätzliche technische Attribute in PRODUCT-Tabelle sind optional (NULL erlaubt)
-- ✓ Schema kann leicht um weitere Attribute erweitert werden
+- `schema.sql` und `mysql-init/01-schema.sql` definieren das hier beschriebene Schema
+- `trigger.sql` und `mysql-init/02-triggers.sql` erweitern das Modell um das Aenderungsprotokoll
+- `procedure.sql` und `mysql-init/03-procedures.sql` nutzen das Schema fuer den validierten Import einzelner Produkte
+- `verify_database.sql` prueft genau diese Tabellen- und Beziehungsstruktur
