@@ -125,7 +125,9 @@ optionale Antwortgenerierung durch GPT-4.1-mini.
 denn die relevanten Treffer kommen weiterhin aus Qdrant. Der Mehrwert liegt in der
 Einordnung: Tags wie `Heavy Duty`, `Premium` oder `Automotive` sowie die Kategorie
 `Kugellager` machen nachvollziehbar, warum bestimmte Produkte in diesem Kontext plausibel
-sind. Da der OpenAI-Schlüssel hier fehlt, ist die LLM-Komponente nicht beurteilbar;
+sind. Die reale Evidenz dafür liegt in den konkret zurückgegebenen Graph-Feldern: Mehrere
+Treffer tragen explizit den Tag `Heavy Duty`, obwohl dieser nicht Teil der ursprünglichen
+SQL-Abfrage war. Da der OpenAI-Schlüssel hier fehlt, ist die LLM-Komponente nicht beurteilbar;
 beurteilbar ist jedoch die Graph-Anreicherung selbst. Für diese Anfrage gilt deshalb:
 **Neo4j ergänzt Qdrant sinnvoll, ersetzt es aber nicht.**
 
@@ -133,6 +135,11 @@ beurteilbar ist jedoch die Graph-Anreicherung selbst. Für diese Anfrage gilt de
 Schlüsselbegriff ist Qdrant der stärkste Suchweg. SQL scheitert an der Wortform, und
 Neo4j liefert erst dann Mehrwert, wenn auf einem bereits brauchbaren Retrieval zusätzliche
 Beziehungskontexte benötigt werden.
+
+**Direkter Methodenvergleich:** SQL liefert keine Treffer und ist damit für diese Anfrage
+didaktisch die klare Negativfolie. Qdrant schließt die semantische Lücke zuverlässig genug,
+während Neo4j dieselben Kandidaten besser erklärbar macht, aber ohne Qdrant keinen eigenen
+Suchvorteil erzeugt.
 
 ---
 
@@ -198,6 +205,9 @@ nützlich, aber **nicht die erste Wahl**, weil der Suchfall bereits ideal strukt
 
 ### Neo4j + RAG
 
+**Ansatz / Pipeline:** Qdrant-Retrieval derselben Anfrage, danach Anreicherung über Neo4j mit
+Marke, Kategorie und Tags.
+
 **Graph-angereicherte Treffer:**
 
 | Produkt | Marke | Kategorie | Tags | Preis | Graph-Quelle |
@@ -213,12 +223,18 @@ zusätzlichen Nutzen hinzu. Der Graph macht zwar Tags und Kategorien sichtbar, a
 entscheidende Information — die Marke `SKF` — liegt bereits sauber relational vor. Der
 Graph-Mehrwert beginnt erst bei Anschlussfragen wie „Welche verwandten Produkte desselben
 Herstellers haben zusätzlich OEM- oder Heavy-Duty-Kontext?" Für den primären Lookup bleibt
-SQL deshalb klar überlegen.
+SQL deshalb klar überlegen. Die reale Evidenz ist hier sogar gegen RAG interpretierbar:
+Die zusätzlichen Tags sind nützlich, ändern aber nichts daran, dass bereits die relationale
+Markenbedingung die eigentliche Fachfrage vollständig beantwortet.
 
 **Zwischenfazit Anfrage 2:** Bei exakten Marken- oder Attributsuchen sollte dieses Projekt
 primär SQL verwenden. Qdrant kann ähnliche Treffer liefern, ersetzt aber nicht die
 Eindeutigkeit relationale Abfragen. Neo4j ist hier eher Ergänzung für weiterführende Fragen
 als Kern der eigentlichen Suche.
+
+**Direkter Methodenvergleich:** SQL gewinnt, weil die Anfrage ein exakt gespeichertes Attribut
+adressiert. Qdrant zeigt, dass semantische Suche auch hier plausible Kandidaten liefert,
+aber die Methode löst das Problem unnötig indirekt. Neo4j ergänzt Kontext, nicht Präzision.
 
 ---
 
@@ -287,6 +303,9 @@ stark im Finden plausibler Kandidaten, aber schwächer im expliziten Begründen.
 
 ### Neo4j + RAG
 
+**Ansatz / Pipeline:** semantisches Qdrant-Retrieval, anschließend Graph-Anreicherung über
+Neo4j-Knoten und Beziehungen für Marke, Kategorie und Tags.
+
 **Graph-angereicherte Treffer:**
 
 | Produkt | Marke | Kategorie | Tags | Preis | Graph-Quelle |
@@ -304,11 +323,17 @@ interessant sein könnte. Gleichzeitig bleibt die Grenze wichtig: Ohne konfiguri
 keine natürliche Antwort erzeugt, und auch mit LLM wäre die Qualität davon abhängig, wie gut
 der Graph-Kontext die konkrete Frage tatsächlich stützt. Für dieses Projekt ist die Aussage
 deshalb bewusst vorsichtig: **Neo4j + RAG hilft hier bei der Einordnung stärker als bei der
-reinen Trefferfindung.**
+reinen Trefferfindung.** Die reale Evidenz dafür sind die zusätzlichen Kontextfelder in den
+Treffern selbst, etwa `Automotive`, `Heavy Duty`, `Industrie` oder `OEM`, die über eine reine
+Ähnlichkeitsliste hinaus eine fachliche Einordnung erlauben.
 
 **Zwischenfazit Anfrage 3:** Bei mehrteiligen, erklärungsbedürftigen Anfragen ist Qdrant für
 das Retrieval stark und Neo4j für die Nachvollziehbarkeit hilfreich. SQL kann nur den
 strukturierten Ausschnitt der Anfrage sicher abdecken.
+
+**Direkter Methodenvergleich:** SQL beantwortet nur den strukturierten Teil der Frage.
+Qdrant findet plausiblere Gesamtkandidaten für die kombinierte Anfrage. Neo4j liefert hier
+den stärksten Zusatznutzen, weil der Graph die Treffer sichtbar kontextualisiert.
 
 ---
 
