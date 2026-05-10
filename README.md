@@ -34,7 +34,7 @@ Die geforderten Artefakte liegen im Projektwurzelverzeichnis bzw. in den angegeb
 - `docs/INDEX_ANALYSIS.md` - B-Tree- und EXPLAIN-Analyse
 - `COMPARISON.md` - Vergleichsanalyse SQL vs. Qdrant vs. Neo4j + RAG
 
-Die Root-Dateien `trigger.sql`, `procedure.sql` und `index.sql` sind die abgabefertigen Einzelartefakte. Dieselbe Logik wird fuer den Docker-Start weiterhin ueber `mysql-init/` geladen.
+Die Root-Dateien `trigger.sql`, `procedure.sql` und `index.sql` sind die abgabefertigen Einzelartefakte. Die Dateien unter `mysql-init/` bleiben trotzdem relevant: `docker-compose.yml` mountet sie nach `/docker-entrypoint-initdb.d`, damit ein frischer MySQL-Container Schema, Trigger und Procedure beim ersten Start automatisch anlegt.
 
 ---
 
@@ -101,7 +101,7 @@ Exponierte Services:
 - Neo4j Web UI: `http://localhost:7484`
 - Neo4j Bolt: `bolt://localhost:7697`
 
-Hinweis: Beim Docker-Start wird nur `mysql-init/` automatisch eingespielt. Der separate CSV-Vollimport bleibt bewusst in `import.sql`, damit er als eigenes Abgabeartefakt nachvollziehbar bleibt.
+Hinweis: Beim Docker-Start wird nur `mysql-init/` automatisch eingespielt. Der separate CSV-Vollimport bleibt bewusst in `import.sql`, damit er als eigenes Abgabeartefakt nachvollziehbar bleibt. Fuer die Wartbarkeit sind `schema.sql` und `mysql-init/01-schema.sql` identisch; `trigger.sql`/`procedure.sql` und `mysql-init/02-triggers.sql`/`mysql-init/03-procedures.sql` beschreiben dieselbe DDL fuer zwei unterschiedliche Einstiegswege (Abgabe vs. Container-Init).
 
 ---
 

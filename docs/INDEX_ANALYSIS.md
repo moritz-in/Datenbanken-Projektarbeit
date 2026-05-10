@@ -8,8 +8,8 @@
 
 ## 1. Vorhandene Indizes
 
-Die folgenden B-Tree-Indizes sind in `mysql-init/01-schema.sql` definiert und werden beim DB-Start
-automatisch angelegt:
+Die folgenden B-Tree-Indizes sind in `schema.sql` definiert; `mysql-init/01-schema.sql` ist fuer den
+Docker-Start absichtlich synchron gehalten und legt dieselben Indizes automatisch an:
 
 | Index-Name | Tabelle | Spalte | Typ |
 |------------|---------|--------|-----|
