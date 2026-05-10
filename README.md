@@ -114,7 +114,7 @@ Hinweis: Beim Docker-Start wird nur `mysql-init/` automatisch eingespielt. Der s
 
 ### A1 Import
 
-- `import.sql` importiert den kompletten Datenbestand mit 1000 Produkten in vier expliziten Transaktionen
+- `import.sql` importiert den kompletten Datenbestand mit 1000 Produkten in einer validierten Gesamttransaktion mit explizitem COMMIT/ROLLBACK
 - der Import nutzt beide Produktdateien (`products_extended.csv` und `products_500_new.csv`)
 
 ### A2 Transaktionen

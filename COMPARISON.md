@@ -1,7 +1,7 @@
 # Vergleich der Suchmethoden: SQL LIKE vs. Qdrant Vektor-Suche vs. Neo4j + RAG
 
 **Projekt:** Datenbanken-Projektarbeit Teil 2  
-**Datenbestand:** 500 Produkte aus einem geseedeten Katalog für Lagertechnik und Industriebedarf  
+**Datenbestand:** 1000 Produkte aus einem geseedeten Katalog fuer Lagertechnik und Industriebedarf  
 **Stack:** Python 3.12, Flask 3.0.3, MySQL 8.4, Qdrant 1.16.2, Neo4j 5, sentence-transformers/all-MiniLM-L6-v2 (384 Dimensionen), GPT-4.1-mini  
 **Datum:** 2026-04-14
 
@@ -346,7 +346,7 @@ bedeutet das: Exakte Vergleiche, Präfixsuchen und strukturierte JOINs können e
 einen sortierten Suchbaum abgewickelt werden, statt alle Zeilen vollständig zu scannen.
 
 Die vereinfachte Intuition lautet: Je besser eine Bedingung als strukturierter Schlüssel
-formulierbar ist, desto eher kann MySQL einen B-Tree nutzen. Bei 500 Produkten ist der
+formulierbar ist, desto eher kann MySQL einen B-Tree nutzen. Bei 1000 Produkten ist der
 absolute Unterschied zwar klein, aber der **didaktische Unterschied** ist klar sichtbar:
 Indexzugriff bleibt gerichtet, Volltext mit führendem Wildcard nicht.
 
@@ -362,7 +362,7 @@ id | select_type | table | type  | possible_keys           | key                
 ```
 id | select_type | table | type   | possible_keys      | key  | rows | Extra
 ---|-------------|-------|--------|--------------------|------|------|-------
-1  | SIMPLE      | p     | ALL    | idx_products_brand | NULL | 500  | Using where
+1  | SIMPLE      | p     | ALL    | idx_products_brand | NULL | 1000 | Using where
 1  | SIMPLE      | b     | eq_ref | PRIMARY            | PRIMARY | 4 | 1    | NULL
 ```
 
@@ -370,7 +370,7 @@ id | select_type | table | type   | possible_keys      | key  | rows | Extra
 |--------|-----------|-------------------------|-----------------------------|
 | `type` | Zugriffstyp | `const` / `ref` | `ALL` |
 | `key` | verwendeter Index | `uq_brand_name`, `idx_products_brand` | `NULL` |
-| `rows` | geschätzte gelesene Zeilen | 1 + 104 | 500 |
+| `rows` | geschaetzte gelesene Zeilen | 1 + 104 | 1000 |
 | `Extra` | Zusatzinfo des Optimizers | `Using index` | `Using where` |
 
 **Kernaussage:** B-Tree-Indizes sind ideal für exakte oder geordnete strukturierte Abfragen,
@@ -391,7 +391,7 @@ verwendete Konfiguration sind zwei Parameter zentral:
   höherer Wert verbessert die Qualität des resultierenden Graphen, macht das Bauen aber
   teurer.
 
-Für diesen Katalog mit 500 Produkten ist diese Konfiguration gut nachvollziehbar: Sie ist
+Fuer diesen Katalog mit 1000 Produkten ist diese Konfiguration gut nachvollziehbar: Sie ist
 nah am praktikablen Standard und liefert ausreichend gute Treffer, ohne dass im Projekt ein
 spezielles Tuning belegt werden müsste.
 

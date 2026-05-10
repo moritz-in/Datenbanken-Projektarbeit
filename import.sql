@@ -1,5 +1,5 @@
 -- ============================================================================
--- Produktdatenbank Import-Skript (CSV-basiert)
+-- Produktdatenbank Import-Skript (CSV-basiert, validiert)
 -- ============================================================================
 -- Ausfuehrung aus dem Repo-Root:
 -- mysql --local-infile=1 -u root -p productdb < import.sql
@@ -14,7 +14,7 @@ SET autocommit = 0;
 SET NAMES utf8mb4;
 
 -- ============================================================================
--- TRANSACTION 1: Stammdaten importieren
+-- TRANSACTION: Vollimport mit Abschlussvalidierung
 -- ============================================================================
 START TRANSACTION;
 
@@ -42,13 +42,6 @@ LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name);
 
-COMMIT;
-
--- ============================================================================
--- TRANSACTION 2: Produktbatch 1 (IDs 1-500)
--- ============================================================================
-START TRANSACTION;
-
 LOAD DATA LOCAL INFILE 'data/products_extended.csv'
 INTO TABLE products
 FIELDS TERMINATED BY ','
@@ -56,13 +49,6 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name, description, brand_id, category_id, price, load_class, application, temperature_range);
-
-COMMIT;
-
--- ============================================================================
--- TRANSACTION 3: Produktbatch 2 (IDs 501-1000)
--- ============================================================================
-START TRANSACTION;
 
 LOAD DATA LOCAL INFILE 'data/products_500_new.csv'
 INTO TABLE products
@@ -72,13 +58,6 @@ LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name, description, brand_id, category_id, price, load_class, application, temperature_range);
 
-COMMIT;
-
--- ============================================================================
--- TRANSACTION 4: M:N-Beziehungen importieren
--- ============================================================================
-START TRANSACTION;
-
 LOAD DATA LOCAL INFILE 'data/product_tags.csv'
 INTO TABLE product_tags
 FIELDS TERMINATED BY ','
@@ -87,13 +66,43 @@ LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (product_id, tag_id);
 
-COMMIT;
+SELECT COUNT(*) INTO @brands_count FROM brands;
+SELECT COUNT(*) INTO @categories_count FROM categories;
+SELECT COUNT(*) INTO @tags_count FROM tags;
+SELECT COUNT(*) INTO @products_count FROM products;
+SELECT COUNT(*) INTO @product_tags_count FROM product_tags;
+
+SET @import_ok = (
+    @brands_count = 5
+    AND @categories_count = 4
+    AND @tags_count = 5
+    AND @products_count = 1000
+    AND @product_tags_count = 995
+);
+
+SET @finalize_sql = IF(@import_ok = 1, 'COMMIT', 'ROLLBACK');
+PREPARE finalize_stmt FROM @finalize_sql;
+EXECUTE finalize_stmt;
+DEALLOCATE PREPARE finalize_stmt;
 
 SET autocommit = 1;
 
-SELECT 'Import erfolgreich abgeschlossen' AS Status;
-SELECT COUNT(*) AS brands_importiert FROM brands;
-SELECT COUNT(*) AS categories_importiert FROM categories;
-SELECT COUNT(*) AS tags_importiert FROM tags;
-SELECT COUNT(*) AS products_importiert FROM products;
-SELECT COUNT(*) AS product_tags_importiert FROM product_tags;
+SELECT CASE
+    WHEN @import_ok = 1 THEN 'Import erfolgreich abgeschlossen'
+    ELSE 'Import wegen Validierungsfehlern per ROLLBACK abgebrochen'
+END AS Status;
+
+SELECT 'brands' AS tabelle, @brands_count AS importiert, 5 AS erwartet,
+    CASE WHEN @brands_count = 5 THEN 'OK' ELSE 'FEHLER' END AS status
+UNION ALL
+SELECT 'categories', @categories_count, 4,
+    CASE WHEN @categories_count = 4 THEN 'OK' ELSE 'FEHLER' END
+UNION ALL
+SELECT 'tags', @tags_count, 5,
+    CASE WHEN @tags_count = 5 THEN 'OK' ELSE 'FEHLER' END
+UNION ALL
+SELECT 'products', @products_count, 1000,
+    CASE WHEN @products_count = 1000 THEN 'OK' ELSE 'FEHLER' END
+UNION ALL
+SELECT 'product_tags', @product_tags_count, 995,
+    CASE WHEN @product_tags_count = 995 THEN 'OK' ELSE 'FEHLER' END;
