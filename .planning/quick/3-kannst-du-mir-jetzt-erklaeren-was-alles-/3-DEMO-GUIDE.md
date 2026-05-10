@@ -286,3 +286,54 @@ Wenn OpenAI nicht gesetzt ist, sage direkt:
 ### Schlusssatz fuer die letzten 20 Sekunden
 
 „Die eigentliche Leistung des Projekts ist nicht nur, dass drei Datenbanksysteme eingebunden sind, sondern dass ihre Rollen sauber getrennt sind: MySQL fuer korrekte Datenhaltung, Qdrant fuer semantisches Retrieval und Neo4j fuer erklaerbaren Kontext." 
+
+## Bewertungsmatrix für die Live-Demo
+
+| Kriterium | Was du live zeigen sollst | Was du sagen kannst | Repo-Beleg | Fallback |
+|---|---|---|---|---|
+| Lauffähige App | `docker compose up --build`, dann `http://localhost:8081`, `/products`, `/validate`, `/search`, `/rag` | „Die Anwendung laeuft als integrierter Stack mit Web-App, MySQL, Qdrant und Neo4j. Ich zeige die Kernrouten direkt im Browser." | `README.md`, `docker-compose.yml`, `routes/dashboard.py`, `routes/products.py`, `routes/validate.py`, `routes/search.py`, `routes/rag.py` | „Falls der Stack schon laeuft, spare ich den Start und zeige direkt die offenen Browser-Tabs. Entscheidend ist, dass die Routen im laufenden System funktionieren." |
+| Architekturüberblick | kurz zwischen `/products`, `/search` und `/rag` wechseln und die Schichten erklaeren | „Die Architektur ist bewusst als Routes → Services → Repositories aufgebaut. So kann dieselbe App je nach Use Case MySQL, Qdrant oder Neo4j ansprechen." | `app.py`, `services/product_service.py`, `services/search_service.py`, `repositories/mysql_repository.py`, `repositories/qdrant_repository.py`, `repositories/neo4j_repository.py` | „Wenn ich nicht live in Dateien springe, reicht die Erklaerung am laufenden Feature: Route nimmt Request an, Service orchestriert, Repository spricht die Datenbank." |
+| Designentscheidung | kurz CRUD/Rollback erklaeren und auf Transaktionsverhalten verweisen | „Eine zentrale Entscheidung war `with session.begin()`. Damit bleiben Create, Update und Delete atomar, und SQLAlchemy 2.0 bleibt konsistent zum DB-Transaktionszustand." | `.planning/STATE.md`, `repositories/mysql_repository.py`, optional `docs/INDEX_ANALYSIS.md` fuer Alternativthema | „Wenn ich den Fehlerfall nicht live triggern will, erklaere ich die Entscheidung direkt am Repository-Code und nenne den sichtbaren Effekt: doppelte SKU fuehrt zu sauberem Rollback statt Teilzustand." |
+| Lessons Learned | am Ende 2-4 kurze Punkte vortragen | „Wir haben gelernt, die Rollen der Datenbanken klar zu trennen: MySQL fuer Wahrheit, Qdrant fuer semantische Suche, Neo4j fuer Kontext. Ausserdem sind Idempotenz und Graceful Degradation fuer Demo-Systeme extrem wichtig." | `.planning/STATE.md`, `README.md`, `COMPARISON.md` | „Wenn die Zeit knapp wird, nenne ich nur die zwei staerksten Learnings: Datenbankrollen klar trennen und Optional-Features ehrlich degradieren statt sie zu versprechen." |
+
+### Presenter-Cheat-Sheet nach Bewertungspunkt
+
+#### Lauffähige App
+
+- **Live zeigen:** `http://localhost:8081`, `/products`, `/validate`, `/search`, `/rag`
+- **Sagen:** „Die Anwendung ist nicht nur dokumentiert, sondern als kompletter Docker-Stack lauffaehig und im Browser demonstrierbar."
+- **Proof:** `README.md` + `docker-compose.yml`
+- **Fallback:** „Ich zeige jetzt die bereits gestartete App, weil fuer die Bewertung die laufende Funktion und nicht das Warten auf Container entscheidend ist."
+
+#### Architekturüberblick
+
+- **Live zeigen:** Wechsel zwischen Produkt-, Such- und RAG-Seite
+- **Sagen:** „Dieselbe Flask-App nutzt eine 3-Tier-Struktur. Die HTTP-Route bleibt duenn, die Fachlogik liegt im Service, und jede Datenbank wird ueber ein eigenes Repository angesprochen."
+- **Proof:** `app.py`, `services/product_service.py`, `services/search_service.py`
+- **Fallback:** „Auch ohne Code-Sprung ist die Architektur am Laufzeitverhalten erkennbar: relationale CRUD-Seite, semantische Suche und graph-angereicherte RAG-Seite sind klar getrennte Anwendungsfaelle derselben Schichten."
+
+#### Designentscheidung
+
+- **Live zeigen:** Produktlogik oder Rollback-Erklaerung an `/products`
+- **Sagen:** „Ich erklaere eine konkrete Entscheidung: `with session.begin()` statt manuellem SQL-`COMMIT`. Das war wichtig, damit Rollbacks sauber und ORM-konform bleiben."
+- **Proof:** `.planning/STATE.md`, `repositories/mysql_repository.py`
+- **Fallback:** „Falls ich den Fehlerfall nicht live ausloese, ist die Repo-Evidenz trotzdem eindeutig, weil die relevanten Repository-Methoden alle im Transaktionsblock laufen."
+
+#### Lessons Learned
+
+- **Live zeigen:** keine weitere Klickstrecke noetig; hier reicht dein Abschluss
+- **Sagen:** „Die wichtigste Erkenntnis war, dass Zusatzsysteme nur dann ueberzeugen, wenn ihre Rolle sauber begrenzt bleibt und die relationale Basis stabil bleibt."
+- **Proof:** `README.md`, `COMPARISON.md`, `.planning/STATE.md`
+- **Fallback:** „Wenn die Zeit knapp ist, schliesse ich mit zwei Learnings: klare Systemrollen und ehrliche Fallbacks bei optionalen LLM-Funktionen."
+
+## Kurzcheck 5 Minuten vor Demo-Start
+
+- `docker compose up --build` wurde bereits erfolgreich ausgefuehrt
+- `http://localhost:8081` ist erreichbar
+- `/products` laedt
+- `/validate` laedt
+- `/index` ist erreichbar oder der Index wurde vorher schon aufgebaut
+- `/search` zeigt Treffer fuer eine vorbereitete Beispielanfrage
+- `/rag` zeigt mindestens Retrieval-Treffer; OpenAI-Antwort ist optional
+- du hast einen Satz fuer den OpenAI-Fallback parat: `[LLM nicht konfiguriert — OPENAI_API_KEY fehlt]`
+- `README.md`, `COMPARISON.md` und `docs/INDEX_ANALYSIS.md` sind als Backup-Tabs offen
