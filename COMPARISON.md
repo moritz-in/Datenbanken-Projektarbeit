@@ -1,7 +1,7 @@
 # Vergleich der Suchmethoden: SQL LIKE vs. Qdrant Vektor-Suche vs. Neo4j + RAG
 
 **Projekt:** Datenbanken-Projektarbeit Teil 2  
-**Datenbestand:** 500 Produkte aus einem seedeten Katalog für Lagertechnik und Industriebedarf  
+**Datenbestand:** 500 Produkte aus einem geseedeten Katalog für Lagertechnik und Industriebedarf  
 **Stack:** Python 3.12, Flask 3.0.3, MySQL 8.4, Qdrant 1.16.2, Neo4j 5, sentence-transformers/all-MiniLM-L6-v2 (384 Dimensionen), GPT-4.1-mini  
 **Datum:** 2026-04-14
 
@@ -398,6 +398,17 @@ spezielles Tuning belegt werden müsste.
 **Einordnung:** HNSW ist keine exakte Vollsuche, sondern eine approximative Nachbarschaftssuche.
 Das passt zur Aufgabe der Vektor-Suche: Nicht perfekte Wortgleichheit, sondern gute semantische
 Kandidaten in vertretbarer Zeit zu liefern.
+
+### Einordnung von Neo4j + RAG im konkreten System
+
+Im vorliegenden Stack erzeugt Neo4j **keine eigenständigen Ersttreffer**, sondern reichert die
+bereits von Qdrant gefundenen Kandidaten mit Beziehungskontext an. Dazu zählen insbesondere
+Marke, Kategorie und Tags. Der RAG-Teil ist deshalb im Projekt nicht als Ersatz für Retrieval
+zu verstehen, sondern als nachgelagerte Kontextschicht.
+
+Diese Abgrenzung ist für die Bewertung wichtig: Wenn der Retrieval-Schritt schwach ist, kann
+auch Neo4j + RAG daraus keine belastbare Produktempfehlung machen. Wenn das Retrieval bereits
+gut ist, verbessert der Graph dagegen die Erklärbarkeit und Anschlussfähigkeit der Ergebnisse.
 
 ---
 
