@@ -94,6 +94,7 @@ docker compose up --build
 
 Exponierte Services:
 
+- MySQL: `localhost:3316`
 - App: `http://localhost:8081`
 - Adminer: `http://localhost:8990`
 - Qdrant HTTP: `http://localhost:6343`
