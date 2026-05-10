@@ -1,324 +1,282 @@
 -- ============================================================================
 -- Datenbank Verifikations- und Test-Skript
 -- ============================================================================
--- Beschreibung: Testet die Installation und Integrität der Datenbank
--- Version: 2.0
--- Datum: 2026-03-30
--- Angepasst für: brand, category, product, tag, product_tag
+-- Beschreibung: Prueft das finale relationale Schema mit pluralisierten Tabellen
+--               sowie Trigger, Procedure und Import-Ergebnis.
+-- Version: 3.0
+-- Datum: 2026-05-10
 -- ============================================================================
 
 SELECT '============================================' AS '';
 SELECT 'Datenbank-Verifikation' AS '';
-SELECT NOW() AS Zeitstempel;
-SELECT DATABASE() AS Datenbank;
+SELECT NOW() AS zeitstempel;
+SELECT DATABASE() AS datenbank;
 SELECT '============================================' AS '';
 
 -- ============================================================================
--- 1. Tabellenexistenz prüfen
+-- 1. Tabellenexistenz pruefen
 -- ============================================================================
-
 SELECT '' AS '';
 SELECT '1. TABELLENEXISTENZ' AS '';
 SELECT '--------------------------------------------' AS '';
 
-SELECT 
-    table_name AS Tabelle,
-    table_rows AS 'Geschätzte Zeilen',
-    ROUND((data_length + index_length) / 1024, 2) AS 'Größe (KB)'
+SELECT
+    table_name AS tabelle,
+    table_rows AS geschaetzte_zeilen,
+    ROUND((data_length + index_length) / 1024, 2) AS groesse_kb
 FROM information_schema.tables
 WHERE table_schema = DATABASE()
-AND table_type = 'BASE TABLE'
+  AND table_type = 'BASE TABLE'
 ORDER BY table_name;
 
 -- ============================================================================
--- 2. Datenzählung und Plausibilitätsprüfung
+-- 2. Datenzaehlung und Plausibilitaetspruefung
 -- ============================================================================
-
 SELECT '' AS '';
-SELECT '2. DATENZÄHLUNG' AS '';
+SELECT '2. DATENZAEHLUNG' AS '';
 SELECT '--------------------------------------------' AS '';
 
-SELECT 'brand' AS Tabelle, COUNT(*) AS Anzahl, 5 AS Erwartet, 
-    CASE WHEN COUNT(*) = 5 THEN '✓' ELSE '✗' END AS Status FROM brand
+SELECT 'brands' AS tabelle, COUNT(*) AS anzahl, 5 AS erwartet,
+    CASE WHEN COUNT(*) = 5 THEN 'OK' ELSE 'FEHLER' END AS status FROM brands
 UNION ALL
-SELECT 'category', COUNT(*), 4, 
-    CASE WHEN COUNT(*) = 4 THEN '✓' ELSE '✗' END FROM category
+SELECT 'categories', COUNT(*), 4,
+    CASE WHEN COUNT(*) = 4 THEN 'OK' ELSE 'FEHLER' END FROM categories
 UNION ALL
-SELECT 'tag', COUNT(*), 5, 
-    CASE WHEN COUNT(*) = 5 THEN '✓' ELSE '✗' END FROM tag
+SELECT 'tags', COUNT(*), 5,
+    CASE WHEN COUNT(*) = 5 THEN 'OK' ELSE 'FEHLER' END FROM tags
 UNION ALL
-SELECT 'product', COUNT(*), 1000, 
-    CASE WHEN COUNT(*) = 1000 THEN '✓' ELSE '✗' END FROM product
+SELECT 'products', COUNT(*), 1000,
+    CASE WHEN COUNT(*) = 1000 THEN 'OK' ELSE 'FEHLER' END FROM products
 UNION ALL
-SELECT 'product_tag', COUNT(*), 995, 
-    CASE WHEN COUNT(*) >= 900 THEN '✓' ELSE '✗' END FROM product_tag;
+SELECT 'product_tags', COUNT(*), 995,
+    CASE WHEN COUNT(*) = 995 THEN 'OK' ELSE 'FEHLER' END FROM product_tags;
 
 -- ============================================================================
--- 3. Referenzielle Integrität prüfen
+-- 3. Referenzielle Integritaet pruefen
 -- ============================================================================
-
 SELECT '' AS '';
-SELECT '3. REFERENZIELLE INTEGRITÄT' AS '';
+SELECT '3. REFERENZIELLE INTEGRITAET' AS '';
 SELECT '--------------------------------------------' AS '';
 
--- Prüfe product.brand_id → brand.id
-SELECT 
-    'product.brand_id' AS 'Foreign Key',
-    COUNT(*) AS 'Verwaiste Einträge',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product p
-LEFT JOIN brand b ON p.brand_id = b.id
-WHERE b.id IS NULL;
-
--- Prüfe product.category_id → category.id
-SELECT 
-    'product.category_id' AS 'Foreign Key',
-    COUNT(*) AS 'Verwaiste Einträge',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product p
-LEFT JOIN category c ON p.category_id = c.id
-WHERE c.id IS NULL;
-
--- Prüfe product_tag.product_id → product.id
-SELECT 
-    'product_tag.product_id' AS 'Foreign Key',
-    COUNT(*) AS 'Verwaiste Einträge',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product_tag pt
-LEFT JOIN product p ON pt.product_id = p.id
-WHERE p.id IS NULL;
-
--- Prüfe product_tag.tag_id → tag.id
-SELECT 
-    'product_tag.tag_id' AS 'Foreign Key',
-    COUNT(*) AS 'Verwaiste Einträge',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product_tag pt
-LEFT JOIN tag t ON pt.tag_id = t.id
+SELECT
+    'products.brand_id -> brands.id' AS foreign_key_name,
+    COUNT(*) AS verwaiste_eintraege,
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END AS status
+FROM products p
+LEFT JOIN brands b ON p.brand_id = b.id
+WHERE b.id IS NULL
+UNION ALL
+SELECT
+    'products.category_id -> categories.id',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM products p
+LEFT JOIN categories c ON p.category_id = c.id
+WHERE c.id IS NULL
+UNION ALL
+SELECT
+    'product_tags.product_id -> products.id',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM product_tags pt
+LEFT JOIN products p ON pt.product_id = p.id
+WHERE p.id IS NULL
+UNION ALL
+SELECT
+    'product_tags.tag_id -> tags.id',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM product_tags pt
+LEFT JOIN tags t ON pt.tag_id = t.id
 WHERE t.id IS NULL;
 
 -- ============================================================================
--- 4. UNIQUE Constraints prüfen
+-- 4. Constraints und Datenqualitaet pruefen
 -- ============================================================================
-
 SELECT '' AS '';
-SELECT '4. UNIQUE CONSTRAINTS' AS '';
+SELECT '4. CONSTRAINTS UND DATENQUALITAET' AS '';
 SELECT '--------------------------------------------' AS '';
 
--- Prüfe brand.name auf Duplikate
-SELECT 
-    'brand.name' AS Constraint,
-    COUNT(*) - COUNT(DISTINCT name) AS Duplikate,
-    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM brand;
-
--- Prüfe category.name auf Duplikate
-SELECT 
-    'category.name' AS Constraint,
-    COUNT(*) - COUNT(DISTINCT name) AS Duplikate,
-    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM category;
-
--- Prüfe tag.name auf Duplikate
-SELECT 
-    'tag.name' AS Constraint,
-    COUNT(*) - COUNT(DISTINCT name) AS Duplikate,
-    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM tag;
-
--- Prüfe product_tag auf doppelte Verknüpfungen
-SELECT 
-    'product_tag (PK)' AS Constraint,
-    SUM(CASE WHEN cnt > 1 THEN cnt - 1 ELSE 0 END) AS Duplikate,
-    CASE WHEN SUM(CASE WHEN cnt > 1 THEN 1 ELSE 0 END) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
+SELECT
+    'brands.name UNIQUE' AS pruefung,
+    COUNT(*) - COUNT(DISTINCT name) AS abweichungen,
+    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN 'OK' ELSE 'FEHLER' END AS status
+FROM brands
+UNION ALL
+SELECT
+    'categories.name UNIQUE',
+    COUNT(*) - COUNT(DISTINCT name),
+    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN 'OK' ELSE 'FEHLER' END
+FROM categories
+UNION ALL
+SELECT
+    'tags.name UNIQUE',
+    COUNT(*) - COUNT(DISTINCT name),
+    CASE WHEN COUNT(*) = COUNT(DISTINCT name) THEN 'OK' ELSE 'FEHLER' END
+FROM tags
+UNION ALL
+SELECT
+    'products.sku UNIQUE',
+    COUNT(sku) - COUNT(DISTINCT sku),
+    CASE WHEN COUNT(sku) = COUNT(DISTINCT sku) THEN 'OK' ELSE 'FEHLER' END
+FROM products
+UNION ALL
+SELECT
+    'product_tags PK (product_id, tag_id)',
+    SUM(CASE WHEN cnt > 1 THEN cnt - 1 ELSE 0 END),
+    CASE WHEN SUM(CASE WHEN cnt > 1 THEN 1 ELSE 0 END) = 0 THEN 'OK' ELSE 'FEHLER' END
 FROM (
-    SELECT product_id, tag_id, COUNT(*) as cnt
-    FROM product_tag
+    SELECT product_id, tag_id, COUNT(*) AS cnt
+    FROM product_tags
     GROUP BY product_id, tag_id
 ) duplicates;
 
--- ============================================================================
--- 5. Datenqualität prüfen
--- ============================================================================
-
-SELECT '' AS '';
-SELECT '5. DATENQUALITÄT' AS '';
-SELECT '--------------------------------------------' AS '';
-
--- Prüfe auf NULL-Werte in NOT NULL Spalten
-SELECT 
-    'product.name NOT NULL' AS Prüfung,
-    COUNT(*) AS 'NULL-Werte',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product
-WHERE name IS NULL OR TRIM(name) = '';
-
-SELECT 
-    'product.brand_id NOT NULL' AS Prüfung,
-    COUNT(*) AS 'NULL-Werte',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product
-WHERE brand_id IS NULL;
-
-SELECT 
-    'product.category_id NOT NULL' AS Prüfung,
-    COUNT(*) AS 'NULL-Werte',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product
+SELECT
+    'products.name NOT EMPTY' AS pruefung,
+    COUNT(*) AS abweichungen,
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END AS status
+FROM products
+WHERE name IS NULL OR TRIM(name) = ''
+UNION ALL
+SELECT
+    'products.price >= 0',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM products
+WHERE price < 0
+UNION ALL
+SELECT
+    'products.brand_id NOT NULL',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM products
+WHERE brand_id IS NULL
+UNION ALL
+SELECT
+    'products.category_id NOT NULL',
+    COUNT(*),
+    CASE WHEN COUNT(*) = 0 THEN 'OK' ELSE 'FEHLER' END
+FROM products
 WHERE category_id IS NULL;
 
-SELECT 
-    'product.price NOT NULL' AS Prüfung,
-    COUNT(*) AS 'NULL-Werte',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product
-WHERE price IS NULL;
+-- ============================================================================
+-- 5. Trigger und Stored Procedure pruefen
+-- ============================================================================
+SELECT '' AS '';
+SELECT '5. TRIGGER UND PROCEDURE' AS '';
+SELECT '--------------------------------------------' AS '';
 
--- Prüfe auf negative Preise
-SELECT 
-    'product.price >= 0' AS Prüfung,
-    COUNT(*) AS 'Negative Preise',
-    CASE WHEN COUNT(*) = 0 THEN '✓ OK' ELSE '✗ FEHLER' END AS Status
-FROM product
-WHERE price < 0;
+SELECT
+    trigger_name AS objekt,
+    event_object_table AS bezug,
+    action_timing AS timing,
+    event_manipulation AS ereignis
+FROM information_schema.triggers
+WHERE trigger_schema = DATABASE()
+ORDER BY trigger_name;
+
+SELECT
+    routine_name AS objekt,
+    routine_type AS typ,
+    data_type AS rueckgabetyp
+FROM information_schema.routines
+WHERE routine_schema = DATABASE()
+ORDER BY routine_name;
 
 -- ============================================================================
 -- 6. Statistiken
 -- ============================================================================
-
 SELECT '' AS '';
 SELECT '6. STATISTIKEN' AS '';
 SELECT '--------------------------------------------' AS '';
 
--- Produkte pro Marke
-SELECT 
-    b.name AS Marke,
-    COUNT(p.id) AS 'Anzahl Produkte'
-FROM brand b
-LEFT JOIN product p ON b.id = p.brand_id
+SELECT
+    b.name AS marke,
+    COUNT(p.id) AS anzahl_produkte
+FROM brands b
+LEFT JOIN products p ON b.id = p.brand_id
 GROUP BY b.id, b.name
 ORDER BY COUNT(p.id) DESC;
 
 SELECT '--------------------------------------------' AS '';
 
--- Produkte pro Kategorie
-SELECT 
-    c.name AS Kategorie,
-    COUNT(p.id) AS 'Anzahl Produkte'
-FROM category c
-LEFT JOIN product p ON c.id = p.category_id
+SELECT
+    c.name AS kategorie,
+    COUNT(p.id) AS anzahl_produkte
+FROM categories c
+LEFT JOIN products p ON c.id = p.category_id
 GROUP BY c.id, c.name
 ORDER BY COUNT(p.id) DESC;
 
 SELECT '--------------------------------------------' AS '';
 
--- Tags Verwendung
-SELECT 
-    t.name AS Tag,
-    COUNT(pt.product_id) AS 'Anzahl Produkte'
-FROM tag t
-LEFT JOIN product_tag pt ON t.id = pt.tag_id
+SELECT
+    t.name AS tag_name,
+    COUNT(pt.product_id) AS anzahl_produkte
+FROM tags t
+LEFT JOIN product_tags pt ON t.id = pt.tag_id
 GROUP BY t.id, t.name
 ORDER BY COUNT(pt.product_id) DESC;
 
 SELECT '--------------------------------------------' AS '';
 
--- Durchschnittliche Tags pro Produkt
-SELECT 
-    'Durchschnitt' AS Statistik,
-    ROUND(COUNT(*) / (SELECT COUNT(DISTINCT product_id) FROM product_tag), 2) AS 'Tags pro Produkt'
-FROM product_tag;
-
--- Produkte mit den meisten Tags
-SELECT 
-    p.id,
-    p.name AS Produkt,
-    COUNT(pt.tag_id) AS 'Anzahl Tags'
-FROM product p
-LEFT JOIN product_tag pt ON p.id = pt.product_id
-GROUP BY p.id, p.name
-ORDER BY COUNT(pt.tag_id) DESC
-LIMIT 10;
-
-SELECT '--------------------------------------------' AS '';
-
--- Preisstatistiken
-SELECT 
-    'Preis Minimum' AS Statistik,
-    MIN(price) AS Wert,
-    'EUR' AS Einheit
-FROM product
+SELECT
+    'Preis Minimum' AS statistik,
+    MIN(price) AS wert,
+    'EUR' AS einheit
+FROM products
 UNION ALL
-SELECT 'Preis Maximum', MAX(price), 'EUR' FROM product
+SELECT 'Preis Maximum', MAX(price), 'EUR' FROM products
 UNION ALL
-SELECT 'Preis Durchschnitt', ROUND(AVG(price), 2), 'EUR' FROM product
-UNION ALL
-SELECT 'Preis Median', 
-    (SELECT price FROM (
-        SELECT price, ROW_NUMBER() OVER (ORDER BY price) as rn,
-               COUNT(*) OVER() as cnt
-        FROM product
-    ) t WHERE rn = FLOOR((cnt + 1) / 2)), 
-    'EUR';
+SELECT 'Preis Durchschnitt', ROUND(AVG(price), 2), 'EUR' FROM products;
 
 -- ============================================================================
 -- 7. Schema-Informationen
 -- ============================================================================
-
 SELECT '' AS '';
 SELECT '7. SCHEMA-INFORMATIONEN' AS '';
 SELECT '--------------------------------------------' AS '';
 
--- Primary Keys
-SELECT 
-    table_name AS Tabelle,
-    column_name AS Spalte,
-    'PRIMARY KEY' AS Typ
+SELECT
+    table_name AS tabelle,
+    column_name AS spalte,
+    'PRIMARY KEY' AS typ
 FROM information_schema.key_column_usage
 WHERE table_schema = DATABASE()
-AND constraint_name = 'PRIMARY'
+  AND constraint_name = 'PRIMARY'
 ORDER BY table_name, ordinal_position;
 
 SELECT '--------------------------------------------' AS '';
 
--- Foreign Keys
-SELECT 
-    kcu.table_name AS Tabelle,
-    kcu.column_name AS Spalte,
-    kcu.referenced_table_name AS 'Referenziert',
-    kcu.referenced_column_name AS 'Spalte Referenz',
-    rc.update_rule AS 'ON UPDATE',
-    rc.delete_rule AS 'ON DELETE'
+SELECT
+    kcu.table_name AS tabelle,
+    kcu.column_name AS spalte,
+    kcu.referenced_table_name AS referenziert,
+    kcu.referenced_column_name AS referenzspalte,
+    rc.update_rule AS on_update_regel,
+    rc.delete_rule AS on_delete_regel
 FROM information_schema.key_column_usage kcu
 JOIN information_schema.referential_constraints rc
-    ON kcu.constraint_name = rc.constraint_name
-    AND kcu.constraint_schema = rc.constraint_schema
+  ON kcu.constraint_name = rc.constraint_name
+ AND kcu.constraint_schema = rc.constraint_schema
 WHERE kcu.table_schema = DATABASE()
-AND kcu.referenced_table_name IS NOT NULL
+  AND kcu.referenced_table_name IS NOT NULL
 ORDER BY kcu.table_name, kcu.column_name;
 
 SELECT '--------------------------------------------' AS '';
 
--- Indizes
-SELECT 
-    table_name AS Tabelle,
-    index_name AS 'Index Name',
-    GROUP_CONCAT(column_name ORDER BY seq_in_index) AS Spalten,
-    CASE non_unique 
-        WHEN 0 THEN 'UNIQUE'
-        ELSE 'INDEX'
-    END AS Typ
+SELECT
+    table_name AS tabelle,
+    index_name AS index_name,
+    GROUP_CONCAT(column_name ORDER BY seq_in_index) AS spalten,
+    CASE non_unique WHEN 0 THEN 'UNIQUE' ELSE 'INDEX' END AS typ
 FROM information_schema.statistics
 WHERE table_schema = DATABASE()
 GROUP BY table_name, index_name, non_unique
 ORDER BY table_name, index_name;
 
--- ============================================================================
--- Abschluss
--- ============================================================================
-
 SELECT '' AS '';
 SELECT '============================================' AS '';
-SELECT '✓ Verifikation abgeschlossen' AS Status;
-SELECT NOW() AS Zeitstempel;
+SELECT 'Verifikation abgeschlossen' AS status;
+SELECT NOW() AS zeitstempel;
 SELECT '============================================' AS '';

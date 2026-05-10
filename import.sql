@@ -1,95 +1,87 @@
 -- ============================================================================
 -- Produktdatenbank Import-Skript (CSV-basiert)
 -- ============================================================================
--- WICHTIG: Dieses Skript muss mit --local-infile=1 ausgeführt werden:
--- mysql --local-infile=1 -u username -p datenbankname < import.sql
+-- Ausfuehrung aus dem Repo-Root:
+-- mysql --local-infile=1 -u root -p productdb < import.sql
 --
 -- Voraussetzungen:
--- 1. Datenbank und Tabellen müssen bereits existieren (schema.sql ausführen)
--- 2. CSV-Dateien müssen im Verzeichnis '/csv/' liegen
--- 3. MySQL muss local_infile aktiviert haben
---
--- Version: 6.0 - CSV Import mit LOAD DATA LOCAL INFILE
--- Datum: 2026-03-30
+-- 1. Das Schema aus schema.sql wurde bereits erstellt.
+-- 2. Das Skript wird aus dem Projektverzeichnis ausgefuehrt.
+-- 3. Die CSV-Dateien liegen im Ordner data/.
 -- ============================================================================
 
 SET autocommit = 0;
--- SET unique_checks = 0;
--- SET foreign_key_checks = 0;
--- SET NAMES utf8mb4;
+SET NAMES utf8mb4;
 
 -- ============================================================================
--- TRANSACTION 1: Stammdaten (Brands, Categories, Tags)
+-- TRANSACTION 1: Stammdaten importieren
 -- ============================================================================
 START TRANSACTION;
 
--- Import Brands (5 Einträge)
-LOAD DATA INFILE '/csv/brands.csv'
-IGNORE INTO TABLE brands
+LOAD DATA LOCAL INFILE 'data/brands.csv'
+INTO TABLE brands
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name);
 
--- Import Categories (4 Einträge)
-LOAD DATA INFILE '/csv/categories.csv'
+LOAD DATA LOCAL INFILE 'data/categories.csv'
 INTO TABLE categories
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name);
 
--- Import Tags (5 Einträge)
-LOAD DATA INFILE '/csv/tags.csv'
+LOAD DATA LOCAL INFILE 'data/tags.csv'
 INTO TABLE tags
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name);
 
--- COMMIT;
+COMMIT;
 
 -- ============================================================================
--- TRANSACTION 2: Produkte 1-500
+-- TRANSACTION 2: Produktbatch 1 (IDs 1-500)
 -- ============================================================================
--- START TRANSACTION;
+START TRANSACTION;
 
-LOAD DATA INFILE '/csv/products_extended.csv'
+LOAD DATA LOCAL INFILE 'data/products_extended.csv'
 INTO TABLE products
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
 (id, name, description, brand_id, category_id, price, load_class, application, temperature_range);
 
--- COMMIT;
+COMMIT;
 
 -- ============================================================================
--- TRANSACTION 3: Produkte 501-1000
+-- TRANSACTION 3: Produktbatch 2 (IDs 501-1000)
 -- ============================================================================
--- START TRANSACTION;
+START TRANSACTION;
 
--- LOAD DATA LOCAL INFILE '/csv/products_500_new.csv'
--- INTO TABLE product
--- FIELDS TERMINATED BY ',' 
--- ENCLOSED BY '"'
--- LINES TERMINATED BY '\n'
--- IGNORE 1 LINES
--- (id, name, description, brand_id, category_id, price, load_class, application, temperature_range);
+LOAD DATA LOCAL INFILE 'data/products_500_new.csv'
+INTO TABLE products
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 LINES
+(id, name, description, brand_id, category_id, price, load_class, application, temperature_range);
 
--- COMMIT;
+COMMIT;
 
 -- ============================================================================
--- TRANSACTION 4: Product-Tag Beziehungen (M:N)
+-- TRANSACTION 4: M:N-Beziehungen importieren
 -- ============================================================================
--- START TRANSACTION;
+START TRANSACTION;
 
-LOAD DATA INFILE '/csv/product_tags.csv'
+LOAD DATA LOCAL INFILE 'data/product_tags.csv'
 INTO TABLE product_tags
-FIELDS TERMINATED BY ',' 
+FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 LINES
@@ -97,17 +89,11 @@ IGNORE 1 LINES
 
 COMMIT;
 
--- ============================================================================
--- Abschluss
--- ============================================================================
--- SET foreign_key_checks = 1;
--- SET unique_checks = 1;
 SET autocommit = 1;
 
--- Erfolgsstatistik anzeigen
--- SELECT 'Import erfolgreich abgeschlossen!' AS Status;
--- SELECT COUNT(*) AS 'Brands importiert' FROM brand;
--- SELECT COUNT(*) AS 'Categories importiert' FROM category;
--- SELECT COUNT(*) AS 'Tags importiert' FROM tag;
--- SELECT COUNT(*) AS 'Produkte importiert' FROM product;
--- SELECT COUNT(*) AS 'Product-Tag Verknüpfungen importiert' FROM product_tag;
+SELECT 'Import erfolgreich abgeschlossen' AS Status;
+SELECT COUNT(*) AS brands_importiert FROM brands;
+SELECT COUNT(*) AS categories_importiert FROM categories;
+SELECT COUNT(*) AS tags_importiert FROM tags;
+SELECT COUNT(*) AS products_importiert FROM products;
+SELECT COUNT(*) AS product_tags_importiert FROM product_tags;
