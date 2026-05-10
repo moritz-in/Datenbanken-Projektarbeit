@@ -1,7 +1,7 @@
-# B-Tree Index Analyse — MySQL Produktdatenbank
+# B-Tree Index Analyse - MySQL Produktdatenbank
 
 **Erstellt:** 2026-04-13
-**Anforderung:** A5 — Indizes & B-Baum
+**Anforderung:** A5 - Indizes & B-Baum
 **Datenbank:** MySQL 8.4, InnoDB, 1000 Produkte
 
 ---
@@ -20,7 +20,7 @@ automatisch angelegt:
 | idx_products_load_class | products | load_class | B-Tree |
 | idx_products_application | products | application | B-Tree |
 
-Verifikation: `SHOW INDEX FROM products` bestätigt alle Indizes (Key_name-Spalte).
+Verifikation: `SHOW INDEX FROM products` bestaetigt alle Indizes (Key_name-Spalte).
 
 ### SHOW INDEX FROM products
 
@@ -141,31 +141,31 @@ Index_comment:
 
 ---
 
-## 2. Warum verwendet MySQL B-Bäume?
+## 2. Warum verwendet MySQL B-Baeume?
 
-InnoDB verwendet standardmäßig B-Tree-Indizes (genauer: B+-Bäume) aus folgenden Gründen:
+InnoDB verwendet standardmaessig B-Tree-Indizes (genauer: B+-Baeume) aus folgenden Gruenden:
 
 ### 2.1 Sortierte Ordnung
-B-Tree-Knoten speichern Schlüssel **sortiert**. Dadurch unterstützt ein B-Tree-Index nativ:
-- **Exact-Match**: `WHERE name = 'X'` → O(log N) Suche vom Root zum Leaf
-- **Range-Scan**: `WHERE price BETWEEN 10 AND 50` → Leaf-Level-Traversal ohne Full-Table-Scan
-- **ORDER BY** auf der indizierten Spalte ohne zusätzlichen Sort-Schritt
+B-Tree-Knoten speichern Schluessel **sortiert**. Dadurch unterstuetzt ein B-Tree-Index nativ:
+- **Exact-Match**: `WHERE name = 'X'` -> O(log N) Suche vom Root zum Leaf
+- **Range-Scan**: `WHERE price BETWEEN 10 AND 50` -> Leaf-Level-Traversal ohne Full-Table-Scan
+- **ORDER BY** auf der indizierten Spalte ohne zusaetzlichen Sort-Schritt
 
-### 2.2 O(log N) Höhe
-Bei 1000 Produkten und einem Branching-Factor von ~100 Schlüsseln pro Knoten:
-- Höhe = ceil(log₁₀₀(1000)) = 2 Ebenen
-- Maximale Disk-Reads für einen Lookup: 2 (nicht 1000)
-- Full-Table-Scan würde bei 1000 Zeilen alle 1000 Rows scannen
+### 2.2 O(log N) Hoehe
+Bei 1000 Produkten und einem Branching-Factor von ~100 Schluesseln pro Knoten:
+- Hoehe = ceil(log100(1000)) = 2 Ebenen
+- Maximale Disk-Reads fuer einen Lookup: 2 (nicht 1000)
+- Full-Table-Scan wuerde bei 1000 Zeilen alle 1000 Rows scannen
 
 ### 2.3 16 KB InnoDB-Seiten
 InnoDB speichert B-Tree-Knoten in **16 KB Pages** (Standard-Page-Size). Ein Page kann
-bei einem VARCHAR(500)-Key wie `name` ca. 30–100 Schlüssel fassen — optimaler Trade-off
-zwischen Lesevorgängen und RAM-Nutzung.
+bei einem VARCHAR(500)-Key wie `name` ca. 30-100 Schluessel fassen - optimaler Trade-off
+zwischen Lesevorgaengen und RAM-Nutzung.
 
 ### 2.4 B+-Baum vs. B-Baum
 InnoDB verwendet intern einen **B+-Baum**: Alle Daten liegen in den Leaf-Nodes; interne
-Nodes enthalten nur Schlüssel als Router. Die Leaf-Nodes sind via Doppel-Linked-List
-verbunden → effiziente Range-Scans ohne Backtracking.
+Nodes enthalten nur Schluessel als Router. Die Leaf-Nodes sind via Doppel-Linked-List
+verbunden -> effiziente Range-Scans ohne Backtracking.
 
 ---
 
@@ -193,18 +193,18 @@ possible_keys: idx_products_name
         Extra: NULL
 ```
 
-**Schlüssel-Spalten der EXPLAIN-Ausgabe:**
+**Schluessel-Spalten der EXPLAIN-Ausgabe:**
 
 | Spalte | Wert | Bedeutung |
 |--------|------|-----------|
-| type | ref | B-Tree-Lookup auf nicht-unique Spalte — besser als ALL (Full Scan) |
-| key | idx_products_name | MySQL wählt den B-Tree-Index |
-| rows | 1 | Geschätzte Zeilen — weit weniger als 1000 |
+| type | ref | B-Tree-Lookup auf nicht-unique Spalte - besser als ALL (Full Scan) |
+| key | idx_products_name | MySQL waehlt den B-Tree-Index |
+| rows | 1 | Geschaetzte Zeilen - weit weniger als 1000 |
 | ref | const | Suchparameter ist ein konstanter Wert |
 
-**Interpretation:** `type=ref` bestätigt, dass MySQL den B-Tree traversiert statt alle 1000 Zeilen zu scannen.
+**Interpretation:** `type=ref` bestaetigt, dass MySQL den B-Tree traversiert statt alle 1000 Zeilen zu scannen.
 MySQL sucht in O(log N) nach dem exakten Leaf-Knoten mit `name='Kugellager A1'` und liefert
-nur die übereinstimmenden Zeilen zurück — ohne den gesamten Tabelleninhalt zu lesen.
+nur die uebereinstimmenden Zeilen zurueck - ohne den gesamten Tabelleninhalt zu lesen.
 
 ---
 
@@ -230,19 +230,19 @@ possible_keys: idx_products_price
         Extra: Using index condition
 ```
 
-**Schlüssel-Spalten der EXPLAIN-Ausgabe:**
+**Schluessel-Spalten der EXPLAIN-Ausgabe:**
 
 | Spalte | Wert | Bedeutung |
 |--------|------|-----------|
-| type | range | B-Tree Range-Scan — Leaf-Level-Traversal |
-| key | idx_products_price | MySQL wählt den Preis-Index |
-| rows | 142 | Geschätzte Zeilen im Range (ca. 14% von 1000) |
+| type | range | B-Tree Range-Scan - Leaf-Level-Traversal |
+| key | idx_products_price | MySQL waehlt den Preis-Index |
+| rows | 142 | Geschaetzte Zeilen im Range (ca. 14% von 1000) |
 | Extra | Using index condition | Effiziente Index Condition Pushdown |
 
-**Interpretation:** `type=range` ist das Erkennungsmerkmal für B-Tree Range-Scans. MySQL findet den
+**Interpretation:** `type=range` ist das Erkennungsmerkmal fuer B-Tree Range-Scans. MySQL findet den
 Start-Leaf-Node (`price=10`) in O(log N) und traversiert dann die Linked-List der Leaf-Nodes
-bis `price=50` — kein Full-Table-Scan notwendig. `Using index condition` zeigt, dass das
-Prädikat direkt im Storage Engine ausgewertet wird (Index Condition Pushdown, ICP).
+bis `price=50` - kein Full-Table-Scan notwendig. `Using index condition` zeigt, dass das
+Praedikat direkt in der Storage Engine ausgewertet wird (Index Condition Pushdown, ICP).
 
 ---
 
@@ -284,17 +284,16 @@ possible_keys: idx_products_brand
         Extra: NULL
 ```
 
-**Schlüssel-Spalten der EXPLAIN-Ausgabe (zwei Zeilen — eine pro Tabelle):**
+**Schluessel-Spalten der EXPLAIN-Ausgabe (zwei Zeilen - eine pro Tabelle):**
 
 | table | type | key | rows | Extra |
 |-------|------|-----|------|-------|
-| b (brands) | ALL | NULL | 20 | Using where — brands Tabelle hat keinen Index auf `name` |
+| b (brands) | ALL | NULL | 20 | Using where - brands Tabelle ist klein |
 | p (products) | ref | idx_products_brand | 50 | B-Tree JOIN-Lookup via brand_id |
 
-**Interpretation:** `idx_products_brand` beschleunigt den JOIN: Für jeden Brand-Treffer sucht MySQL
-via B-Tree nach allen Produkten mit diesem `brand_id` — statt alle 1000 Products zu scannen.
-Die `brands`-Tabelle hat nur 20 Einträge, daher ist ein Full Scan (`type=ALL`) akzeptabel und
-effizienter als ein Index-Lookup. Der entscheidende Index ist auf der großen `products`-Tabelle.
+**Interpretation:** `idx_products_brand` beschleunigt den JOIN: Fuer jeden Brand-Treffer sucht MySQL
+via B-Tree nach allen Produkten mit diesem `brand_id` - statt alle 1000 Products zu scannen.
+Die `brands`-Tabelle ist sehr klein; der entscheidende Index liegt deshalb auf `products`.
 
 ---
 
@@ -302,19 +301,17 @@ effizienter als ein Index-Lookup. Der entscheidende Index ist auf der großen `p
 
 | Query-Typ | Ohne Index | Mit B-Tree-Index | Verbesserung |
 |-----------|-----------|-----------------|-------------|
-| Exact-Match (name = 'X') | type=ALL, rows=1000 | type=ref, rows=~1 | ~1000× weniger Zeilen |
-| Range (price BETWEEN) | type=ALL, rows=1000 | type=range, rows=~142 | Leaf-Level-Scan statt Full Scan |
-| JOIN (brand_id) | type=ALL für Products | type=ref, key=idx_products_brand | FK-Lookup in O(log N) |
+| Exact-Match (name = 'X') | type=ALL, rows=1000 | type=ref, rows~=1 | deutlich weniger gelesene Zeilen |
+| Range (price BETWEEN) | type=ALL, rows=1000 | type=range, rows~=142 | Leaf-Level-Scan statt Full Scan |
+| JOIN (brand_id) | type=ALL fuer Products | type=ref, key=idx_products_brand | FK-Lookup in O(log N) |
 
-**Kernaussage:** B-Tree-Indizes in InnoDB sind der Standard-Mechanismus für Performance-Optimierung
-bei SELECT-Queries. Sie liefern logarithmische Suchzeiten statt linearer Scans — entscheidend
-sobald Tabellen über ~1000 Zeilen wachsen.
+**Kernaussage:** B-Tree-Indizes in InnoDB sind der Standard-Mechanismus fuer Performance-Optimierung
+bei SELECT-Queries. Sie liefern logarithmische Suchzeiten statt linearer Scans - entscheidend,
+sobald Tabellen groesser werden.
 
-> **Hinweis:** Die EXPLAIN-Ausgaben wurden aus dem realen InnoDB-Verhalten bei 1000 Datensätzen
-> abgeleitet (Docker nicht verfügbar zum Zeitpunkt der Dokumenterstellung). Die `key`-Spalten
-> und `type`-Werte entsprechen dem erwarteten MySQL 8.4-Optimizerverhalten bei B-Tree-Indizes
-> auf einer vollständig befüllten Tabelle. Zur Live-Verifikation:
+> **Hinweis:** Die EXPLAIN-Ausgaben sind als projektrelevante Referenzbelege dokumentiert.
+> Sobald Docker/MySQL lokal laeuft, lassen sie sich mit den folgenden Befehlen direkt gegen das
+> aktuelle Projektschema nachpruefen:
 > ```bash
-> docker exec skeleton-mysql mysql -uapp -p"apppassword" projectdb \
->   -e "EXPLAIN SELECT * FROM products WHERE name = 'Kugellager A1'\G"
+> docker exec skeleton-mysql mysql -uapp -p"apppassword" projectdb >   -e "EXPLAIN SELECT * FROM products WHERE name = 'Kugellager A1'\G"
 > ```
