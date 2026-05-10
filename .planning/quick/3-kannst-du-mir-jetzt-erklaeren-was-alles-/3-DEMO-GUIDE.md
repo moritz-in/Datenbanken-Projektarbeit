@@ -168,3 +168,121 @@ Das ist kein Demo-Fehler, sondern die im Projekt implementierte degradierte Lauf
 | Qdrant | `/search` mit semantischer Anfrage | `COMPARISON.md` mit Query „Kugellager fuer hohe Last" nennen |
 | Neo4j / RAG | `/rag` Trefferliste | Neo4j Web UI oder `graph_source` erklaeren |
 | OpenAI-Antwort | nur wenn Key gesetzt | exakten Fallback-String zeigen und offen benennen |
+
+## 15-Minuten-Live-Demo
+
+### Minute 0-2 — Einstieg und Scope setzen
+
+**Zeigen:** laufende App auf `http://localhost:8081`
+
+**Sagen:**
+
+- „Das Projekt vergleicht drei Ebenen derselben Anwendung: MySQL als Source of Truth, Qdrant fuer semantische Suche und Neo4j als Kontextschicht fuer RAG."
+- „Ich zeige jetzt zuerst die lauffaehige Web-App, dann die Architektur und am Ende eine konkrete Designentscheidung plus Lessons Learned."
+
+### Minute 2-5 — MySQL-gestuetzte Produktdemo
+
+**Zeigen:** `/products`
+
+**Sprechzettel:**
+
+- Produktliste mit relationalen Daten laden
+- kurz auf Create/Edit/Delete verweisen
+- erwaehnen, dass die Fehlerfaelle fuer Rollback sichtbar ueber Flash-Messages demonstriert werden
+
+**Kernsatz:** „Hier sieht man den operativen Kern des Systems: Produktdaten liegen in MySQL und werden transaktionssicher ueber die Web-Oberflaeche bearbeitet."
+
+### Minute 5-8 — Validierung, Procedure und Index-Bezug
+
+**Zeigen:** `/validate` und danach kurz `/validate/procedure`
+
+**Sagen:**
+
+- „Diese Seite zeigt, dass das erwartete relationale Schema und die Indexe wirklich im laufenden System vorhanden sind."
+- „Die Procedure-Demo ist interessant, weil Validierung und Dublettenpruefung nicht nur in Python, sondern direkt in MySQL umgesetzt sind."
+
+Wenn die Procedure-Ausfuehrung zu riskant ist, zeige nur das Formular und erklaere den Rueckgabecode-Mechanismus.
+
+### Minute 8-11 — Semantische Suche und RAG-Pfad
+
+**Zeigen:** zuerst `/search`, dann `/rag`
+
+**Empfohlene Anfrage:** „Kugellager fuer hohe Last"
+
+**Sagen:**
+
+- „SQL findet exakte Zeichenketten oder strukturierte Attribute sehr gut, aber nicht immer semantisch aehnliche Formulierungen."
+- „Qdrant schliesst genau diese Luecke ueber Embeddings."
+- „Die RAG-Seite nutzt dieselben Retrieval-Treffer und reichert sie zusaetzlich mit Neo4j-Kontext an."
+
+Wenn OpenAI nicht gesetzt ist, sage direkt:
+
+> „Die LLM-Antwort ist in diesem Lauf bewusst im Fallback-Modus; das Projekt zeigt dann den implementierten Hinweis `[LLM nicht konfiguriert — OPENAI_API_KEY fehlt]`, aber Retrieval und Graph-Kontext bleiben demonstrierbar." 
+
+### Minute 11-13 — Architekturüberblick
+
+## Architekturüberblick
+
+**Architektur in einem Satz:** `Routes → Services → Repositories`
+
+### Routes → Services → Repositories
+
+| Ebene | Rolle im Projekt | Repo-Beispiele |
+|---|---|---|
+| Routes | HTTP-Endpunkte und UI-Fluss | `routes/products.py`, `routes/search.py`, `routes/rag.py` |
+| Services | Fachlogik und Orchestrierung | `services/product_service.py`, `services/search_service.py`, `services/index_service.py` |
+| Repositories | direkter DB-Zugriff | `repositories/mysql_repository.py`, `repositories/qdrant_repository.py`, `repositories/neo4j_repository.py` |
+
+**So erklaerst du die Architektur live:**
+
+1. Flask-Route nimmt Request an
+2. Service kapselt die Fachlogik
+3. Repository spricht die konkrete Datenbank an
+4. MySQL bleibt Quelle, Qdrant und Neo4j erweitern Such- und Kontextfaehigkeit
+
+**Praxis-Satz:** „Ich habe nicht drei getrennte Apps gebaut, sondern eine Architektur, in der dieselbe Web-Oberflaeche gezielt verschiedene Datenbankrollen anspricht." 
+
+### Minute 13-15 — Designentscheidung und Lessons Learned
+
+## Designentscheidung
+
+**Gewaehlte Entscheidung:** `with session.begin()` fuer Transaktionssicherheit in MySQL
+
+**Warum genau diese Entscheidung gut erklaerbar ist:**
+
+- sie ist bewertungsnah, weil sie direkt mit A2 / Rollback zusammenhaengt
+- sie ist in `STATE.md` explizit als Schluesselentscheidung dokumentiert
+- sie hat einen klaren technischen Grund: kein manueller `COMMIT`, keine Desynchronisation mit SQLAlchemy 2.0
+
+**Repo-Evidenz:**
+
+- `STATE.md`: „`with session.begin():` exclusively — no `text("COMMIT")`"
+- `repositories/mysql_repository.py`: Transaktionsbloecke in `create_product()`, `update_product()`, `delete_product()` und `log_etl_run()`
+
+**So erklaerst du die Entscheidung in 30-45 Sekunden:**
+
+„Wir haben uns fuer `with session.begin()` entschieden, weil SQLAlchemy 2.0 die Session intern selbst verwaltet. Ein rohes `COMMIT` im SQL haette den ORM-Zustand desynchronisiert. Mit diesem Pattern sind Create, Update und Delete atomar, und Fehler wie doppelte SKU fuehren sauber zu einem Rollback statt zu halben Datenbankaenderungen." 
+
+**Falls du lieber auf Index-Theorie ausweichst:** Verweise kurz auf `docs/INDEX_ANALYSIS.md` und den B-Tree-Nachweis, aber bleibe bei genau **einer** Designentscheidung.
+
+## Lessons Learned
+
+1. **Transaktionslogik gehoert ins Repository, nicht in die Route.**
+   - Quelle: `STATE.md` und `repositories/mysql_repository.py`
+   - Lerneffekt: Die UI bleibt simpel, waehrend die atomare DB-Operation an einer Stelle abgesichert wird.
+
+2. **MySQL bleibt die verbindliche Datenquelle, auch wenn Qdrant und Neo4j spannend wirken.**
+   - Quelle: `README.md`
+   - Lerneffekt: Die Erweiterungen sind Such- und Kontextschichten, kein Ersatz fuer das relationale Modell.
+
+3. **Idempotenz war bei den Zusatzsystemen entscheidend.**
+   - Quelle: `STATE.md` Entscheidungen zu `ensure_collection()` und `MERGE`
+   - Lerneffekt: Wiederholte Index-Builds duerfen weder Qdrant noch Neo4j kaputt oder doppelt machen.
+
+4. **Graceful Degradation ist fuer eine Live-Demo wichtiger als perfekte Optional-Features.**
+   - Quelle: `STATE.md` Entscheidung zum OpenAI-Fallback und `services/search_service.py`
+   - Lerneffekt: Auch ohne API-Key bleibt `/rag` demonstrierbar, weil der Fallback sauber implementiert ist.
+
+### Schlusssatz fuer die letzten 20 Sekunden
+
+„Die eigentliche Leistung des Projekts ist nicht nur, dass drei Datenbanksysteme eingebunden sind, sondern dass ihre Rollen sauber getrennt sind: MySQL fuer korrekte Datenhaltung, Qdrant fuer semantisches Retrieval und Neo4j fuer erklaerbaren Kontext." 
